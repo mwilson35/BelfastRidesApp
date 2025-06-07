@@ -1,6 +1,7 @@
 import { registerRootComponent } from 'expo';
 import React from 'react';
-import MapScreen from './MapScreen';
+import MapScreen from '../../components/MapScreen';
+
 
 
 export default function App() {
