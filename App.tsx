@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, TextInput, Button, Text, StyleSheet, Alert } from 'react-native';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
+import RiderDashboard from './src/components/RiderDashboard';
 
 export default function App() {
   const [username, setUsername] = useState('');
@@ -26,13 +27,21 @@ export default function App() {
   };
 
   if (role === 'driver') {
-    return <View style={styles.center}><Text>Driver Dashboard (placeholder)</Text></View>;
+    return (
+      <View style={styles.center}>
+        <Text>Driver Dashboard (placeholder)</Text>
+      </View>
+    );
   }
   if (role === 'rider') {
-    return <View style={styles.center}><Text>Rider Dashboard (placeholder)</Text></View>;
+    return <RiderDashboard />;
   }
   if (role === 'admin') {
-    return <View style={styles.center}><Text>Admin Dashboard (placeholder)</Text></View>;
+    return (
+      <View style={styles.center}>
+        <Text>Admin Dashboard (placeholder)</Text>
+      </View>
+    );
   }
 
   return (
