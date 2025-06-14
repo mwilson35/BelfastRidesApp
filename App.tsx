@@ -3,12 +3,22 @@ import { View, TextInput, Button, Text, StyleSheet, Alert } from 'react-native';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 import RiderDashboard from './src/components/RiderDashboard';
+import DriverDashboard from './src/components/DriverDashboard';
+
 
 export default function App() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [role, setRole] = useState<string | null>(null);
+
+  // 1. Logout function
+  const logout = () => {
+    setRole(null);
+    setUsername('');
+    setPassword('');
+    setMessage('');
+  };
 
   const handleLogin = async () => {
     try {
@@ -26,15 +36,13 @@ export default function App() {
     }
   };
 
-  if (role === 'driver') {
-    return (
-      <View style={styles.center}>
-        <Text>Driver Dashboard (placeholder)</Text>
-      </View>
-    );
-  }
+if (role === 'driver') {
+  return <DriverDashboard logout={logout} />;
+}
+
+  // 2. Pass logout to RiderDashboard
   if (role === 'rider') {
-    return <RiderDashboard />;
+    return <RiderDashboard logout={logout} />;
   }
   if (role === 'admin') {
     return (

@@ -6,10 +6,10 @@ type Props = {
   logout: () => void;
 };
 
-const RiderDashboard: React.FC<Props> = ({ logout }) => {
+const DriverDashboard: React.FC<Props> = ({ logout }) => {
   return (
     <View style={{ flex: 1 }}>
-      <Text style={styles.heading}>Rider Dashboard</Text>
+      <Text style={styles.heading}>Driver Dashboard</Text>
       <Button title="Logout" onPress={logout} />
       <View style={{ flex: 1 }}>
         <MapScreen />
@@ -24,8 +24,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     padding: 16,
     textAlign: 'center',
-    backgroundColor: '#f3f3f3',
+    backgroundColor: '#e0f7fa',
   },
 });
 
-export default RiderDashboard;
+export default DriverDashboard;
