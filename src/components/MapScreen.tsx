@@ -1,9 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, PermissionsAndroid, Platform } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, Polyline } from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
+import PolylineDecoder from '@mapbox/polyline';
 
-const MapScreen = () => {
+type Props = {
+  encodedPolyline?: string;
+};
+
+const MapScreen: React.FC<Props> = ({ encodedPolyline }) => {
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   useEffect(() => {
@@ -30,6 +35,16 @@ const MapScreen = () => {
     getLocation();
   }, []);
 
+  // Decode the polyline into coordinates
+  let routeCoordinates: { latitude: number; longitude: number }[] = [];
+  if (encodedPolyline) {
+    try {
+      routeCoordinates = PolylineDecoder.decode(encodedPolyline).map(
+        ([latitude, longitude]: [number, number]) => ({ latitude, longitude })
+      );
+    } catch (e) {}
+  }
+
   if (!location) {
     return (
       <View style={styles.center}>
@@ -38,22 +53,38 @@ const MapScreen = () => {
     );
   }
 
-  return (
-    <MapView
-      style={{ flex: 1 }}
-      showsUserLocation
-      initialRegion={{
+  // Center map: on route, or on user
+  const initialRegion = routeCoordinates.length
+    ? {
+        latitude: routeCoordinates[0].latitude,
+        longitude: routeCoordinates[0].longitude,
+        latitudeDelta: 0.04,
+        longitudeDelta: 0.04,
+      }
+    : {
         latitude: location.latitude,
         longitude: location.longitude,
         latitudeDelta: 0.015,
         longitudeDelta: 0.015,
-      }}
+      };
+
+  return (
+    <MapView
+      style={{ flex: 1 }}
+      showsUserLocation
+      initialRegion={initialRegion}
     >
       <Marker
         coordinate={location}
         title="You are here"
         description="Your current location"
       />
+      {routeCoordinates.length > 0 && (
+        <Polyline
+          coordinates={routeCoordinates}
+          strokeWidth={5}
+        />
+      )}
     </MapView>
   );
 };

@@ -36,66 +36,62 @@ const RiderDashboard: React.FC<Props> = ({ logout }) => {
     }
   };
 
+  const handleClearPreview = () => {
+    setPreview(null);
+    setPickupLocation('');
+    setDestination('');
+  };
+
   return (
-    <View style={{ flex: 1 }}>
-      <Text style={styles.heading}>Rider Dashboard</Text>
-      <Button title="Logout" onPress={logout} />
+    <View style={styles.container}>
+      <View style={styles.headerRow}>
+        <Text style={styles.heading}>Rider Dashboard</Text>
+        <Button title="Logout" onPress={logout} />
+      </View>
       <View style={styles.inputBox}>
         <TextInput
           style={styles.input}
-          placeholder="Pickup location "
+          placeholder="Pickup location"
           value={pickupLocation}
           onChangeText={setPickupLocation}
         />
         <TextInput
           style={styles.input}
-          placeholder="Destination "
+          placeholder="Destination"
           value={destination}
           onChangeText={setDestination}
         />
-        <Button title="Preview Ride" onPress={handlePreviewRide} />
+        <View style={styles.buttonRow}>
+          <Button title="Preview Ride" onPress={handlePreviewRide} />
+          {preview && <Button title="Clear Preview" onPress={handleClearPreview} color="#f77" />}
+        </View>
       </View>
       {loading && <ActivityIndicator style={{ margin: 12 }} />}
       {preview && (
         <View style={styles.previewBox}>
+          <Text style={styles.previewTitle}>Ride Preview</Text>
           <Text>Distance: {preview.distance}</Text>
           <Text>Duration: {preview.duration}</Text>
           <Text>Fare: {preview.estimatedFare}</Text>
         </View>
       )}
-      <View style={{ flex: 1 }}>
-        <MapScreen />
+      <View style={styles.mapContainer}>
+        <MapScreen encodedPolyline={preview?.encodedPolyline} />
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  heading: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    padding: 16,
-    textAlign: 'center',
-    backgroundColor: '#f3f3f3',
-  },
-  inputBox: {
-    padding: 12,
-    backgroundColor: '#fafafa',
-  },
-  input: {
-    borderWidth: 1,
-    marginBottom: 8,
-    padding: 8,
-    borderRadius: 4,
-    backgroundColor: 'white',
-  },
-  previewBox: {
-    padding: 12,
-    backgroundColor: '#e7f7ee',
-    borderRadius: 6,
-    marginHorizontal: 12,
-    marginBottom: 8,
-  },
+  container: { flex: 1, backgroundColor: '#f7f7fa' },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, paddingTop: 24 },
+  heading: { fontSize: 20, fontWeight: 'bold', textAlign: 'left' },
+  inputBox: { padding: 12, backgroundColor: '#fff', margin: 12, borderRadius: 8, elevation: 2 },
+  input: { borderWidth: 1, marginBottom: 8, padding: 8, borderRadius: 4, backgroundColor: 'white' },
+  buttonRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
+  previewBox: { padding: 12, marginHorizontal: 12, marginBottom: 8, backgroundColor: '#e7f7ee', borderRadius: 8 },
+  previewTitle: { fontWeight: 'bold', fontSize: 16, marginBottom: 4 },
+  mapContainer: { flex: 1, overflow: 'hidden', borderRadius: 12, margin: 12, backgroundColor: '#eee' },
 });
 
 export default RiderDashboard;
