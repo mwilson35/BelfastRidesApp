@@ -85,25 +85,48 @@ const MapScreen: React.FC<Props> = ({ encodedPolyline }) => {
 
   return (
     <View style={{ flex: 1 }}>
-      <MapView
-        ref={mapRef}
-        style={{ flex: 1 }}
-        showsUserLocation
-        initialRegion={mapRegion}
-      >
-        <Marker
-          coordinate={location}
-          title="You are here"
-          description="Your current location"
-        />
-        {routeCoordinates.length > 0 && (
-          <Polyline
-            coordinates={routeCoordinates}
-            strokeWidth={5}
-            strokeColor="#007bff"
-          />
-        )}
-      </MapView>
+     <MapView
+  ref={mapRef}
+  style={{ flex: 1 }}
+  showsUserLocation
+  initialRegion={mapRegion}
+>
+  {/* Your current location marker */}
+  <Marker
+    coordinate={location}
+    title="You are here"
+    description="Your current location"
+    pinColor="#007bff"
+  />
+
+  {/* Polyline route, and pickup/dropoff markers */}
+  {routeCoordinates.length > 0 && (
+    <>
+      <Polyline
+        coordinates={routeCoordinates}
+        strokeWidth={5}
+        strokeColor="#007bff"
+      />
+
+      {/* Pickup marker (start of polyline) */}
+      <Marker
+        coordinate={routeCoordinates[0]}
+        title="Pickup"
+        description="Pickup location"
+        pinColor="green"
+      />
+
+      {/* Dropoff marker (end of polyline) */}
+      <Marker
+        coordinate={routeCoordinates[routeCoordinates.length - 1]}
+        title="Dropoff"
+        description="Dropoff location"
+        pinColor="red"
+      />
+    </>
+  )}
+</MapView>
+
       {/* "My Location" floating button */}
       <TouchableOpacity style={styles.myLocationBtn} onPress={handleMyLocation}>
         <Text style={{ color: '#007bff', fontWeight: 'bold', fontSize: 16 }}>◎</Text>
