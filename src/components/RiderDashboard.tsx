@@ -4,9 +4,10 @@ import MapScreen from './MapScreen';
 
 type Props = {
   logout: () => void;
+  token: string | null;
 };
 
-const RiderDashboard: React.FC<Props> = ({ logout }) => {
+const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
   const [pickupLocation, setPickupLocation] = useState('');
   const [destination, setDestination] = useState('');
   const [preview, setPreview] = useState<any>(null);
@@ -21,9 +22,12 @@ const RiderDashboard: React.FC<Props> = ({ logout }) => {
     setLoading(true);
     setPreview(null);
     try {
-      const response = await fetch('http://192.168.33.6:5000/rides/preview', {
+      const response = await fetch('http://192.168.33.6:5000/api/rides/preview', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({ pickupLocation, destination })
       });
       const data = await response.json();

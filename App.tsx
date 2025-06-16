@@ -5,16 +5,17 @@ import { jwtDecode } from 'jwt-decode';
 import RiderDashboard from './src/components/RiderDashboard';
 import DriverDashboard from './src/components/DriverDashboard';
 
-
 export default function App() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [role, setRole] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);  // <-- add this line
 
   // 1. Logout function
   const logout = () => {
     setRole(null);
+    setToken(null);                 // <-- reset token on logout
     setUsername('');
     setPassword('');
     setMessage('');
@@ -23,11 +24,12 @@ export default function App() {
   const handleLogin = async () => {
     try {
       const response = await axios.post(
-        'http://192.168.33.6:5000/auth/login',
+        'http://192.168.33.6:5000/api/auth/login',
         { username, password }
       );
       const { accessToken } = response.data;
       setMessage('Login successful!');
+      setToken(accessToken);                 // <-- save token here
       const decoded: any = jwtDecode(accessToken);
       setRole(decoded.role);
     } catch (error: any) {
@@ -36,14 +38,14 @@ export default function App() {
     }
   };
 
-if (role === 'driver') {
-  return <DriverDashboard logout={logout} />;
-}
-
-  // 2. Pass logout to RiderDashboard
-  if (role === 'rider') {
-    return <RiderDashboard logout={logout} />;
+  if (role === 'driver') {
+    return <DriverDashboard logout={logout} token={token} />; // <-- pass token here too if needed
   }
+
+  if (role === 'rider') {
+    return <RiderDashboard logout={logout} token={token} />; // <-- THIS IS THE FIX
+  }
+
   if (role === 'admin') {
     return (
       <View style={styles.center}>
