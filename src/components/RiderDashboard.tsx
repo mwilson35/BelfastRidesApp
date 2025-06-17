@@ -144,10 +144,24 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
     <Text>Duration: {requestedRide.duration}</Text>
     <Text>Fare: {requestedRide.estimatedFare}</Text>
 
-    {/* Cancel Button */}
-    <Button title="Cancel Ride" onPress={cancelRide} color="#f33" />
+    {/* Cancel Button with Confirmation */}
+    <Button
+      title="Cancel Ride"
+      color="#f33"
+      onPress={() => {
+        Alert.alert(
+          'Cancel Ride?',
+          'Are you sure you want to cancel this ride?',
+          [
+            { text: 'No', style: 'cancel' },
+            { text: 'Yes, Cancel', style: 'destructive', onPress: cancelRide }
+          ]
+        );
+      }}
+    />
   </View>
 )}
+
 
 
       <View style={styles.mapContainer}>
