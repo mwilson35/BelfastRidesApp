@@ -53,6 +53,27 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
     }
   };
 
+
+  const cancelRide = async () => {
+  if (!requestedRide?.rideId) {
+    Alert.alert('Error', 'No ride to cancel.');
+    return;
+  }
+
+  try {
+    await axios.post(
+      'http://192.168.33.6:5000/api/rides/cancel',
+      { rideId: requestedRide.rideId },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    Alert.alert('Ride Cancelled', 'Your ride has been successfully cancelled.');
+    handleClearPreview(); // 💥 this clears preview, requestedRide, inputs
+  } catch (err: any) {
+    Alert.alert('Cancel Failed', err.response?.data?.message || err.message);
+  }
+};
+
+
   const handleClearPreview = () => {
     setPreview(null);
     setRequestedRide(null); // <-- CLEAR REQUESTED RIDE TOO
@@ -116,14 +137,18 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
         </View>
       )}
 
-      {requestedRide && (
-        <View style={styles.previewBox}>
-          <Text style={styles.previewTitle}>Ride Requested Successfully!</Text>
-          <Text>Distance: {requestedRide.distance}</Text>
-          <Text>Duration: {requestedRide.duration}</Text>
-          <Text>Fare: {requestedRide.estimatedFare}</Text>
-        </View>
-      )}
+{requestedRide && (
+  <View style={styles.previewBox}>
+    <Text style={styles.previewTitle}>Ride Requested Successfully!</Text>
+    <Text>Distance: {requestedRide.distance}</Text>
+    <Text>Duration: {requestedRide.duration}</Text>
+    <Text>Fare: {requestedRide.estimatedFare}</Text>
+
+    {/* Cancel Button */}
+    <Button title="Cancel Ride" onPress={cancelRide} color="#f33" />
+  </View>
+)}
+
 
       <View style={styles.mapContainer}>
         <MapScreen encodedPolyline={(requestedRide || preview)?.encodedPolyline} />
