@@ -11,7 +11,6 @@ type Props = {
 
 const MapScreen: React.FC<Props> = ({ encodedPolyline }) => {
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [mapRegion, setMapRegion] = useState<any>(null);
   const mapRef = useRef<MapView | null>(null);
 
   useEffect(() => {
@@ -26,35 +25,34 @@ const MapScreen: React.FC<Props> = ({ encodedPolyline }) => {
       }
       Geolocation.getCurrentPosition(
         (pos: any) => {
-          const coords = {
+          setLocation({
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
-          };
-          setLocation(coords);
-          setMapRegion({
-            ...coords,
-            latitudeDelta: 0.015,
-            longitudeDelta: 0.015,
           });
         },
-        (err: any) => console.warn(err),
+        (err: any) => {
+          console.warn(err);
+          setLocation(null); // stay loading if location fails
+        },
         { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
       );
     };
     getLocation();
   }, []);
 
-  // Decode the polyline into coordinates
+  // Decode polyline
   let routeCoordinates: { latitude: number; longitude: number }[] = [];
   if (encodedPolyline) {
     try {
       routeCoordinates = PolylineDecoder.decode(encodedPolyline).map(
         ([latitude, longitude]: [number, number]) => ({ latitude, longitude })
       );
-    } catch (e) {}
+    } catch (e) {
+      routeCoordinates = [];
+    }
   }
 
-  // Snap map to route whenever a new route is set
+  // Snap map to route
   useEffect(() => {
     if (mapRef.current && routeCoordinates.length > 0) {
       mapRef.current.fitToCoordinates(routeCoordinates, {
@@ -64,7 +62,7 @@ const MapScreen: React.FC<Props> = ({ encodedPolyline }) => {
     }
   }, [encodedPolyline]);
 
-  // Recenters map on your location
+  // My Location button
   const handleMyLocation = () => {
     if (location && mapRef.current) {
       mapRef.current.animateToRegion({
@@ -75,57 +73,58 @@ const MapScreen: React.FC<Props> = ({ encodedPolyline }) => {
     }
   };
 
+  // Don't render map until we have a location
   if (!location) {
     return (
       <View style={styles.center}>
-        <Text>Getting location...</Text>
+        <Text>Getting your location...</Text>
       </View>
     );
   }
 
   return (
     <View style={{ flex: 1 }}>
-     <MapView
-  ref={mapRef}
-  style={{ flex: 1 }}
-  showsUserLocation
-  initialRegion={mapRegion}
->
-  {/* Your current location marker */}
-  <Marker
-    coordinate={location}
-    title="You are here"
-    description="Your current location"
-    pinColor="#007bff"
-  />
+      <MapView
+        ref={mapRef}
+        style={{ flex: 1 }}
+        initialRegion={{
+          ...location,
+          latitudeDelta: 0.015,
+          longitudeDelta: 0.015,
+        }}
+        showsUserLocation
+      >
+        <Marker
+          coordinate={location}
+          title="You are here"
+          description="Your current location"
+          pinColor="#007bff"
+        />
 
-  {/* Polyline route, and pickup/dropoff markers */}
-  {routeCoordinates.length > 0 && (
-    <>
-      <Polyline
-        coordinates={routeCoordinates}
-        strokeWidth={5}
-        strokeColor="#007bff"
-      />
+        {routeCoordinates.length > 0 && (
+          <>
+            <Polyline
+              coordinates={routeCoordinates}
+              strokeWidth={5}
+              strokeColor="#007bff"
+            />
 
-      {/* Pickup marker (start of polyline) */}
-      <Marker
-        coordinate={routeCoordinates[0]}
-        title="Pickup"
-        description="Pickup location"
-        pinColor="green"
-      />
+            <Marker
+              coordinate={routeCoordinates[0]}
+              title="Pickup"
+              description="Pickup location"
+              pinColor="green"
+            />
 
-      {/* Dropoff marker (end of polyline) */}
-      <Marker
-        coordinate={routeCoordinates[routeCoordinates.length - 1]}
-        title="Dropoff"
-        description="Dropoff location"
-        pinColor="red"
-      />
-    </>
-  )}
-</MapView>
+            <Marker
+              coordinate={routeCoordinates[routeCoordinates.length - 1]}
+              title="Dropoff"
+              description="Dropoff location"
+              pinColor="red"
+            />
+          </>
+        )}
+      </MapView>
 
       {/* "My Location" floating button */}
       <TouchableOpacity style={styles.myLocationBtn} onPress={handleMyLocation}>

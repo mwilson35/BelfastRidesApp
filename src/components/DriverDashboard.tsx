@@ -4,7 +4,9 @@ import MapScreen from './MapScreen';
 
 type Props = {
   logout: () => void;
+  token: string | null;
 };
+
 
 const DriverDashboard: React.FC<Props> = ({ logout }) => {
   return (
