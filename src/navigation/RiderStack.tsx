@@ -9,13 +9,15 @@ const RiderStack = ({ logout, token }: any) => (
   <Tab.Navigator>
     <Tab.Screen
       name="Dashboard"
+      component={RiderDashboard}
+      initialParams={{ logout, token }}
       options={{ title: 'Dashboard', headerShown: false }}
-      children={() => <RiderDashboard logout={logout} token={token} />}
     />
     <Tab.Screen
       name="RideHistory"
+      component={RideHistoryScreen}
+      initialParams={{ token }}
       options={{ title: 'Ride History' }}
-      children={() => <RideHistoryScreen token={token} />}
     />
   </Tab.Navigator>
 );

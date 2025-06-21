@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Button, TextInput, Keyboard, ActivityIndicator, Alert } from 'react-native';
 import MapScreen from './MapScreen';
 import axios from 'axios';
-
+import { useRideStore } from '../store/useRideStore';
+import { useRoute, useFocusEffect } from '@react-navigation/native';
 type Props = {
   logout: () => void;
-  token: string | null;
+  token: string;
 };
+
 
 const requestRide = async (pickupLocation: string, destination: string, token: string | null) => {
 
@@ -17,14 +19,25 @@ const requestRide = async (pickupLocation: string, destination: string, token: s
   );
   return response.data;
 };
+const RiderDashboard: React.FC = () => {
+  const route = useRoute();
+  const { logout, token } = route.params as { logout: () => void; token: string };
 
-const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
   const [pickupLocation, setPickupLocation] = useState('');
   const [destination, setDestination] = useState('');
-  const [preview, setPreview] = useState<any>(null);
-  const [requestedRide, setRequestedRide] = useState<any>(null); // <-- ADDED STATE
+  const { preview, setPreview, requestedRide, setRequestedRide } = useRideStore();
+const [mapKey, setMapKey] = useState(0);
+
+
   const [loading, setLoading] = useState(false);
   const [requestLoading, setRequestLoading] = useState(false); // <-- ADDED STATE
+
+  useFocusEffect(
+  React.useCallback(() => {
+    setMapKey((prev) => prev + 1);
+  }, [])
+);
+
 
   const handlePreviewRide = async () => {
     Keyboard.dismiss();
@@ -164,7 +177,7 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
 
 
 <View style={styles.mapContainer}>
-  <MapScreen encodedPolyline={(requestedRide || preview)?.encodedPolyline} />
+<MapScreen key={mapKey} encodedPolyline={(requestedRide || preview)?.encodedPolyline} />
 </View>
 
     </View>
