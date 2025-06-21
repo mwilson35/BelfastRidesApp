@@ -4,6 +4,9 @@ import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 import RiderDashboard from './src/components/RiderDashboard';
 import DriverDashboard from './src/components/DriverDashboard';
+import { NavigationContainer } from '@react-navigation/native';
+import RiderStack from './src/navigation/RiderStack';
+
 
 export default function App() {
   const [username, setUsername] = useState('');
@@ -42,9 +45,15 @@ export default function App() {
     return <DriverDashboard logout={logout} token={token} />; // <-- pass token here too if needed
   }
 
-  if (role === 'rider') {
-    return <RiderDashboard logout={logout} token={token} />; // <-- THIS IS THE FIX
-  }
+if (role === 'rider') {
+  return (
+    <NavigationContainer>
+      <RiderStack logout={logout} token={token} />
+    </NavigationContainer>
+  );
+}
+
+
 
   if (role === 'admin') {
     return (
