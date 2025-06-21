@@ -163,10 +163,10 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
 )}
 
 
+<View style={styles.mapContainer}>
+  <MapScreen encodedPolyline={(requestedRide || preview)?.encodedPolyline} />
+</View>
 
-      <View style={styles.mapContainer}>
-<MapScreen />
-      </View>
     </View>
   );
 };
