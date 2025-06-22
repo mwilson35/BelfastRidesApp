@@ -1,35 +1,39 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import RiderDashboard from '../components/RiderDashboard';
 import RideHistoryScreen from '../components/RideHistoryScreen';
+// Import other screens as needed
+import RiderDashboard from '../components/RiderDashboard';
 
-
-
-
-type RiderStackParamList = {
-  Dashboard: undefined; // props injected manually
-  RideHistory: { token: string };
+type Props = {
+  logout: () => void;
+  token: string;
 };
 
+export type RiderStackParamList = {
+  RideHistory: undefined;
+  RiderDashboard: undefined;
+};
 
 const Tab = createBottomTabNavigator<RiderStackParamList>();
 
-const RiderStack = ({ logout, token }: any) => (
-  <Tab.Navigator>
-<Tab.Screen
-  name="Dashboard"
-  options={{ title: 'Dashboard', headerShown: false }}
->
-  {() => <RiderDashboard logout={logout} token={token} />}
-</Tab.Screen>
+const RiderStack: React.FC<Props> = ({ logout, token }) => {
+  return (
+    <Tab.Navigator>
+      <Tab.Screen
+        name="RiderDashboard"
+        options={{ title: 'Dashboard' }}
+      >
+        {(props) => <RiderDashboard {...props} token={token} logout={logout} />}
+      </Tab.Screen>
 
-    <Tab.Screen
-      name="RideHistory"
-      component={RideHistoryScreen}
-      initialParams={{ token }}
-      options={{ title: 'Ride History' }}
-    />
-  </Tab.Navigator>
-);
+      <Tab.Screen
+        name="RideHistory"
+        options={{ title: 'Ride History' }}
+      >
+        {(props) => <RideHistoryScreen {...props} token={token} />}
+      </Tab.Screen>
+    </Tab.Navigator>
+  );
+};
 
 export default RiderStack;
