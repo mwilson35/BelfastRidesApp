@@ -3,16 +3,26 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import RiderDashboard from '../components/RiderDashboard';
 import RideHistoryScreen from '../components/RideHistoryScreen';
 
-const Tab = createBottomTabNavigator();
+
+
+
+type RiderStackParamList = {
+  Dashboard: undefined; // props injected manually
+  RideHistory: { token: string };
+};
+
+
+const Tab = createBottomTabNavigator<RiderStackParamList>();
 
 const RiderStack = ({ logout, token }: any) => (
   <Tab.Navigator>
-    <Tab.Screen
-      name="Dashboard"
-      component={RiderDashboard}
-      initialParams={{ logout, token }}
-      options={{ title: 'Dashboard', headerShown: false }}
-    />
+<Tab.Screen
+  name="Dashboard"
+  options={{ title: 'Dashboard', headerShown: false }}
+>
+  {() => <RiderDashboard logout={logout} token={token} />}
+</Tab.Screen>
+
     <Tab.Screen
       name="RideHistory"
       component={RideHistoryScreen}

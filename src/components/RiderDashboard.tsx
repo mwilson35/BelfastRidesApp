@@ -4,10 +4,14 @@ import MapScreen from './MapScreen';
 import axios from 'axios';
 import { useRideStore } from '../store/useRideStore';
 import { useRoute, useFocusEffect } from '@react-navigation/native';
+
+
+
 type Props = {
   logout: () => void;
   token: string;
 };
+
 
 
 const requestRide = async (pickupLocation: string, destination: string, token: string | null) => {
@@ -19,9 +23,8 @@ const requestRide = async (pickupLocation: string, destination: string, token: s
   );
   return response.data;
 };
-const RiderDashboard: React.FC = () => {
+const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
   const route = useRoute();
-  const { logout, token } = route.params as { logout: () => void; token: string };
 
   const [pickupLocation, setPickupLocation] = useState('');
   const [destination, setDestination] = useState('');

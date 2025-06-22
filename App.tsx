@@ -48,7 +48,7 @@ export default function App() {
 if (role === 'rider') {
   return (
     <NavigationContainer>
-      <RiderStack logout={logout} token={token} />
+<RiderStack logout={logout} token={token || ''} />
     </NavigationContainer>
   );
 }
