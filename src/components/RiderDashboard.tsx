@@ -13,7 +13,7 @@ type Props = {
 const requestRide = async (pickupLocation: string, destination: string, token: string | null) => {
 
   const response = await axios.post(
-    'http://192.168.33.6:5000/api/rides/request',
+    'http://192.168.33.3:5000/api/rides/request',
     { pickupLocation, destination },
     { headers: { Authorization: `Bearer ${token}` } }
   );
@@ -48,7 +48,7 @@ const [mapKey, setMapKey] = useState(0);
     setLoading(true);
     setPreview(null);
     try {
-      const response = await fetch('http://192.168.33.6:5000/api/rides/preview', {
+      const response = await fetch('http://192.168.33.3:5000/api/rides/preview', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -75,7 +75,7 @@ const [mapKey, setMapKey] = useState(0);
 
   try {
     await axios.post(
-      'http://192.168.33.6:5000/api/rides/cancel',
+      'http://192.168.33.3:5000/api/rides/cancel',
       { rideId: requestedRide.rideId },
       { headers: { Authorization: `Bearer ${token}` } }
     );
