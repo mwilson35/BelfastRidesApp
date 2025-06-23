@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
 import axios from 'axios';
+import RideHistoryItem from './RideHistoryItem';
 
 type Ride = {
   id: number;
@@ -18,6 +19,7 @@ type Props = {
 const RideHistoryScreen: React.FC<Props> = ({ token }) => {
   const [rideHistory, setRideHistory] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedRideId, setExpandedRideId] = useState<number | null>(null);
 
   useEffect(() => {
     axios
@@ -39,26 +41,20 @@ const RideHistoryScreen: React.FC<Props> = ({ token }) => {
 
   return (
     <View style={styles.container}>
-<FlatList
-  data={rideHistory}
-  keyExtractor={(item) => item.id.toString()}
-  renderItem={({ item }) => (
-    <View style={styles.item}>
-      <Text style={styles.title}>
-        {item.pickup_location} → {item.destination}
-      </Text>
-      <Text>Status: {item.status}</Text>
-      <Text>Date: {new Date(item.requested_at).toLocaleString()}</Text>
-<Text>
-  Fare: {item.fare ? `£${Number(item.fare).toFixed(2)}` : '£00.00'}
-</Text>
-
-    </View>
-  )}
-  ListEmptyComponent={<Text>No rides found.</Text>}
-/>
-
-
+      <FlatList
+        data={rideHistory}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <RideHistoryItem
+            ride={item}
+            expanded={expandedRideId === item.id}
+            onToggle={() =>
+              setExpandedRideId(expandedRideId === item.id ? null : item.id)
+            }
+          />
+        )}
+        ListEmptyComponent={<Text>No rides found.</Text>}
+      />
     </View>
   );
 };
