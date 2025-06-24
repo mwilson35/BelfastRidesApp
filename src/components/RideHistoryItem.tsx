@@ -14,7 +14,7 @@ type Props = {
   onToggle: () => void;
 };
 
-const GOOGLE_MAPS_API_KEY = 'AIzaSyBN67af-oAZ0kt13niZ4H1S_i3q-S2Uiv8';
+const BACKEND_URL = 'http://192.168.33.3:5000';
 
 const RideHistoryItem: React.FC<Props> = ({ ride, expanded, onToggle }) => {
   const [mapUrl, setMapUrl] = useState('');
@@ -24,35 +24,44 @@ const RideHistoryItem: React.FC<Props> = ({ ride, expanded, onToggle }) => {
     if (!expanded) return;
 
     setLoading(true);
-    const base = 'https://maps.googleapis.com/maps/api/staticmap';
-    const size = '600x300';
-    const pickup = encodeURIComponent(ride.pickup_location);
-    const dropoff = encodeURIComponent(ride.destination);
-    const url = `${base}?size=${size}&markers=color:green|label:P|${pickup}&markers=color:red|label:D|${dropoff}&key=${GOOGLE_MAPS_API_KEY}`;
-    setMapUrl(url);
-    setLoading(false);
+
+    fetch(
+      `${BACKEND_URL}/api/maps/staticmap?pickup=${encodeURIComponent(
+        ride.pickup_location
+      )}&dropoff=${encodeURIComponent(ride.destination)}`
+    )
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch map');
+        return res.json();
+      })
+      .then(data => {
+        setMapUrl(data.url || '');
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Map fetch error:', err);
+        setMapUrl('');
+        setLoading(false);
+      });
   }, [expanded, ride]);
 
   return (
     <TouchableOpacity onPress={onToggle} style={styles.item}>
-      <Text style={styles.title}>{ride.pickup_location} → {ride.destination}</Text>
+      <Text style={styles.title}>
+        {ride.pickup_location} → {ride.destination}
+      </Text>
       <Text>Status: {ride.status}</Text>
       <Text>Date: {new Date(ride.requested_at).toLocaleString()}</Text>
       <Text>Fare: {ride.fare ? `£${Number(ride.fare).toFixed(2)}` : '£00.00'}</Text>
-{expanded && (
-  loading ? (
-    <ActivityIndicator style={{ marginTop: 10 }} />
-  ) : mapUrl ? (
-    <Image
-      source={{ uri: mapUrl }}
-      style={styles.map}
-      resizeMode="cover"
-    />
-  ) : (
-    <Text style={{ marginTop: 10 }}>Map not available</Text>
-  )
-)}
-
+      {expanded && (
+        loading ? (
+          <ActivityIndicator style={{ marginTop: 10 }} />
+        ) : mapUrl ? (
+          <Image source={{ uri: mapUrl }} style={styles.map} resizeMode="cover" />
+        ) : (
+          <Text style={{ marginTop: 10 }}>Map not available</Text>
+        )
+      )}
     </TouchableOpacity>
   );
 };
