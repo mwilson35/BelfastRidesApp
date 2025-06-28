@@ -121,32 +121,60 @@ const [mapKey, setMapKey] = useState(0);
 
   return (
     <View style={styles.container}>
-<View style={styles.headerRow}>
+<View style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }}>
   <TouchableOpacity onPress={() => setMenuVisible(true)}>
-    <MaterialIcons name="more-vert" size={28} color="#333" />
+    <MaterialIcons name="menu" size={32} color="#333" />
   </TouchableOpacity>
 </View>
+
 <Modal
   visible={menuVisible}
   transparent
   animationType="fade"
   onRequestClose={() => setMenuVisible(false)}
 >
-  <Pressable style={styles.modalOverlay} onPress={() => setMenuVisible(false)}>
-    <View style={styles.menuBox}>
+  <Pressable
+    style={{
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.15)',
+    }}
+    onPress={() => setMenuVisible(false)}
+  >
+    <View
+      style={{
+        position: 'absolute',
+        top: 55, // adjust for vertical position
+        left: 20,
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        elevation: 4,
+        minWidth: 150,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
+      }}
+    >
       <Pressable
         onPress={() => {
           setMenuVisible(false);
           logout();
         }}
-        style={styles.menuItem}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingVertical: 8,
+        }}
       >
-        <MaterialIcons name="logout" size={20} color="#f33" />
-        <Text style={{ marginLeft: 12 }}>Logout</Text>
+        <MaterialIcons name="logout" size={22} color="#e53e3e" />
+        <Text style={{ marginLeft: 10, fontSize: 16, color: '#333' }}>Logout</Text>
       </Pressable>
     </View>
   </Pressable>
 </Modal>
+
 
 
       <View style={styles.inputBox}>

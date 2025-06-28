@@ -18,7 +18,7 @@ const Tab = createBottomTabNavigator<RiderStackParamList>();
 
 const RiderStack: React.FC<Props> = ({ logout, token }) => {
   return (
-    <Tab.Navigator>
+<Tab.Navigator screenOptions={{ headerShown: false }}>
 <Tab.Screen
   name="RiderDashboard"
   options={{ title: '', tabBarLabel: '' }}
