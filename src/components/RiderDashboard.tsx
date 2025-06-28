@@ -122,7 +122,6 @@ const [mapKey, setMapKey] = useState(0);
   return (
     <View style={styles.container}>
 <View style={styles.headerRow}>
-  <Text style={styles.heading}>Dashboard</Text>
   <TouchableOpacity onPress={() => setMenuVisible(true)}>
     <MaterialIcons name="more-vert" size={28} color="#333" />
   </TouchableOpacity>

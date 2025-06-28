@@ -19,12 +19,13 @@ const Tab = createBottomTabNavigator<RiderStackParamList>();
 const RiderStack: React.FC<Props> = ({ logout, token }) => {
   return (
     <Tab.Navigator>
-      <Tab.Screen
-        name="RiderDashboard"
-        options={{ title: 'Dashboard' }}
-      >
-        {(props) => <RiderDashboard {...props} token={token} logout={logout} />}
-      </Tab.Screen>
+<Tab.Screen
+  name="RiderDashboard"
+  options={{ title: '', tabBarLabel: '' }}
+>
+  {(props) => <RiderDashboard {...props} token={token} logout={logout} />}
+</Tab.Screen>
+
 
       <Tab.Screen
         name="RideHistory"
