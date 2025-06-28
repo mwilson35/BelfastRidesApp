@@ -4,6 +4,9 @@ import MapScreen from './MapScreen';
 import axios from 'axios';
 import { useRideStore } from '../store/useRideStore';
 import { useRoute, useFocusEffect } from '@react-navigation/native';
+import { TouchableOpacity, Modal, Pressable } from 'react-native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+
 
 
 
@@ -24,6 +27,8 @@ const requestRide = async (pickupLocation: string, destination: string, token: s
   return response.data;
 };
 const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
+  const [menuVisible, setMenuVisible] = useState(false);
+
   const route = useRoute();
 
   const [pickupLocation, setPickupLocation] = useState('');
@@ -116,10 +121,34 @@ const [mapKey, setMapKey] = useState(0);
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={styles.heading}>Rider Dashboard</Text>
-        <Button title="Logout" onPress={logout} />
-      </View>
+<View style={styles.headerRow}>
+  <Text style={styles.heading}>Dashboard</Text>
+  <TouchableOpacity onPress={() => setMenuVisible(true)}>
+    <MaterialIcons name="more-vert" size={28} color="#333" />
+  </TouchableOpacity>
+</View>
+<Modal
+  visible={menuVisible}
+  transparent
+  animationType="fade"
+  onRequestClose={() => setMenuVisible(false)}
+>
+  <Pressable style={styles.modalOverlay} onPress={() => setMenuVisible(false)}>
+    <View style={styles.menuBox}>
+      <Pressable
+        onPress={() => {
+          setMenuVisible(false);
+          logout();
+        }}
+        style={styles.menuItem}
+      >
+        <MaterialIcons name="logout" size={20} color="#f33" />
+        <Text style={{ marginLeft: 12 }}>Logout</Text>
+      </Pressable>
+    </View>
+  </Pressable>
+</Modal>
+
 
       <View style={styles.inputBox}>
         <TextInput
@@ -187,16 +216,12 @@ const [mapKey, setMapKey] = useState(0);
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f7f7fa' },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, paddingTop: 24 },
-  heading: { fontSize: 20, fontWeight: 'bold', textAlign: 'left' },
-  inputBox: { padding: 12, backgroundColor: '#fff', margin: 12, borderRadius: 8, elevation: 2 },
-  input: { borderWidth: 1, marginBottom: 8, padding: 8, borderRadius: 4, backgroundColor: 'white' },
-  buttonRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-  previewBox: { padding: 12, marginHorizontal: 12, marginBottom: 8, backgroundColor: '#e7f7ee', borderRadius: 8 },
-  previewTitle: { fontWeight: 'bold', fontSize: 16, marginBottom: 4 },
-  mapContainer: { flex: 1, overflow: 'hidden', borderRadius: 12, margin: 12, backgroundColor: '#eee' },
-});
+import styles from '../../css/RiderDashboard.styles';
+
+
+
+
 
 export default RiderDashboard;
+
+
