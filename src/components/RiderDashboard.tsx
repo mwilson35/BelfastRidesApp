@@ -6,6 +6,8 @@ import { useRideStore } from '../store/useRideStore';
 import { useRoute, useFocusEffect } from '@react-navigation/native';
 import { TouchableOpacity, Modal, Pressable } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { useNavigation } from '@react-navigation/native';
+
 
 
 
@@ -29,22 +31,21 @@ const requestRide = async (pickupLocation: string, destination: string, token: s
 const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
   const [menuVisible, setMenuVisible] = useState(false);
 
-  const route = useRoute();
+  const navigation = useNavigation(); // 👈 THIS IS THE ONE
 
+  const route = useRoute();
   const [pickupLocation, setPickupLocation] = useState('');
   const [destination, setDestination] = useState('');
   const { preview, setPreview, requestedRide, setRequestedRide } = useRideStore();
-const [mapKey, setMapKey] = useState(0);
-
-
+  const [mapKey, setMapKey] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [requestLoading, setRequestLoading] = useState(false); // <-- ADDED STATE
+  const [requestLoading, setRequestLoading] = useState(false);
 
   useFocusEffect(
-  React.useCallback(() => {
-    setMapKey((prev) => prev + 1);
-  }, [])
-);
+    React.useCallback(() => {
+      setMapKey((prev) => prev + 1);
+    }, [])
+  );
 
 
   const handlePreviewRide = async () => {
@@ -141,37 +142,55 @@ const [mapKey, setMapKey] = useState(0);
     onPress={() => setMenuVisible(false)}
   >
     <View
-      style={{
-        position: 'absolute',
-        top: 55, // adjust for vertical position
-        left: 20,
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        elevation: 4,
-        minWidth: 150,
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 6,
-      }}
-    >
-      <Pressable
-        onPress={() => {
-          setMenuVisible(false);
-          logout();
-        }}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingVertical: 8,
-        }}
-      >
-        <MaterialIcons name="logout" size={22} color="#e53e3e" />
-        <Text style={{ marginLeft: 10, fontSize: 16, color: '#333' }}>Logout</Text>
-      </Pressable>
-    </View>
+  style={{
+    position: 'absolute',
+    top: 55,
+    left: 20,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    elevation: 4,
+    minWidth: 150,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+  }}
+>
+  {/* 💥 Profile button */}
+  <Pressable
+    onPress={() => {
+      setMenuVisible(false);
+      navigation.navigate('Profile' as never);
+    }}
+    style={{
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 8,
+    }}
+  >
+    <MaterialIcons name="person" size={22} color="#333" />
+    <Text style={{ marginLeft: 10, fontSize: 16, color: '#333' }}>Profile</Text>
+  </Pressable>
+
+  {/* 🔚 Logout button */}
+  <Pressable
+    onPress={() => {
+      setMenuVisible(false);
+      logout();
+    }}
+    style={{
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 8,
+    }}
+  >
+    <MaterialIcons name="logout" size={22} color="#e53e3e" />
+    <Text style={{ marginLeft: 10, fontSize: 16, color: '#333' }}>Logout</Text>
+  </Pressable>
+</View>
+
   </Pressable>
 </Modal>
 
