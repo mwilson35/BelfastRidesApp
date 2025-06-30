@@ -41,8 +41,9 @@ const ProfileScreen = ({ token }: { token: string }) => {
     formData.append('documentType', 'profilePhoto');
 
     try {
-      const res = await axios.post(
-        'http://192.168.33.3:5000/api/uploadDocument',
+const res = await axios.post(
+  'http://192.168.33.3:5000/api/documents/uploadDocument',
+
         formData,
         {
           headers: {
