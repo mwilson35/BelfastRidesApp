@@ -16,7 +16,10 @@ const RiderDashboardStack = ({ token, logout }: { token: string; logout: () => v
       <Stack.Screen name="MainDashboard">
         {(props) => <RiderDashboard {...props} token={token} logout={logout} />}
       </Stack.Screen>
-      <Stack.Screen name="Profile" component={ProfileScreen} />
+     <Stack.Screen name="Profile">
+  {(props) => <ProfileScreen {...props} token={token} />}
+</Stack.Screen>
+
     </Stack.Navigator>
   );
 };
