@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import RiderStack from './src/navigation/RiderStack';
 import DriverDashboard from './src/components/DriverDashboard';
 import LoginScreen from './src/components/LoginScreen';
+import AuthStack from './src/navigation/AuthStack';
 
 export default function App() {
   const [role, setRole] = useState<string | null>(null);
@@ -39,5 +40,8 @@ export default function App() {
     );
   }
 
-  return <LoginScreen onLogin={handleLogin} />;
-}
+return (
+  <NavigationContainer>
+    <AuthStack onLogin={handleLogin} />
+  </NavigationContainer>
+);}

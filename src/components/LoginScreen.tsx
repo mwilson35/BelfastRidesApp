@@ -2,15 +2,22 @@ import React, { useState } from 'react';
 import { View, TextInput, Button, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { AuthStackParamList } from '../navigation/AuthStack';
+
 
 type Props = {
   onLogin: (userRole: string, accessToken: string) => void;
 };
 
 const LoginScreen: React.FC<Props> = ({ onLogin }) => {
+  const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
+  
 
   const handleLogin = async () => {
     try {
@@ -49,7 +56,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
 
       <Button title="Login" onPress={handleLogin} />
 
-      <TouchableOpacity onPress={() => Alert.alert('Not implemented', 'Sign-up screen goes here.')}>
+<TouchableOpacity onPress={() => navigation.navigate('Signup')}>
         <Text style={styles.link}>Don’t have an account? Sign up</Text>
       </TouchableOpacity>
 
