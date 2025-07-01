@@ -1,5 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, Button, StyleSheet, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  Image,
+  Button,
+  StyleSheet,
+  ActivityIndicator,
+  TextInput,
+  Alert,
+} from 'react-native';
 import axios from 'axios';
 import * as ImagePicker from 'react-native-image-picker';
 
@@ -12,13 +21,20 @@ type Profile = {
 const ProfileScreen = ({ token }: { token: string }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [editMode, setEditMode] = useState(false);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
 
   useEffect(() => {
     axios
       .get('http://192.168.33.3:5000/api/user/profile', {
-        headers: { Authorization: `Bearer ${token}` }, // ✅ FIXED
+        headers: { Authorization: `Bearer ${token}` },
       })
-      .then((res) => setProfile(res.data))
+      .then((res) => {
+        setProfile(res.data);
+        setName(res.data.username);
+        setEmail(res.data.email);
+      })
       .catch((err) => console.error('Profile load failed', err))
       .finally(() => setLoading(false));
   }, []);
@@ -41,13 +57,12 @@ const ProfileScreen = ({ token }: { token: string }) => {
     formData.append('documentType', 'profilePhoto');
 
     try {
-const res = await axios.post(
-  'http://192.168.33.3:5000/api/documents/uploadDocument',
-
+      const res = await axios.post(
+        'http://192.168.33.3:5000/api/documents/uploadDocument',
         formData,
         {
           headers: {
-            Authorization: `Bearer ${token}`, // ✅ FIXED
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'multipart/form-data',
           },
         }
@@ -57,6 +72,27 @@ const res = await axios.post(
       );
     } catch (err) {
       console.error('Upload failed:', err);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      const res = await axios.put(
+        'http://192.168.33.3:5000/api/user/profile',
+        { username: name, email },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      Alert.alert('Success', 'Profile updated');
+      setProfile({ ...profile!, username: name, email });
+      setEditMode(false);
+    } catch (err) {
+      console.error('Update failed:', err);
+      Alert.alert('Update Failed', 'Could not save changes');
     }
   };
 
@@ -74,13 +110,29 @@ const res = await axios.post(
       ) : (
         <Text>No profile picture available.</Text>
       )}
-      <Text style={styles.label}>
-        <Text style={styles.bold}>Name:</Text> {profile.username}
-      </Text>
-      <Text style={styles.label}>
-        <Text style={styles.bold}>Email:</Text> {profile.email}
-      </Text>
       <Button title="Change Profile Photo" onPress={handlePickPhoto} />
+
+      <Text style={styles.label}>Name:</Text>
+      <TextInput
+        style={styles.input}
+        value={name}
+        onChangeText={setName}
+        editable={editMode}
+      />
+
+      <Text style={styles.label}>Email:</Text>
+      <TextInput
+        style={styles.input}
+        value={email}
+        onChangeText={setEmail}
+        editable={editMode}
+      />
+
+      {editMode ? (
+        <Button title="Save Changes" onPress={handleSave} />
+      ) : (
+        <Button title="Edit Profile" onPress={() => setEditMode(true)} />
+      )}
     </View>
   );
 };
@@ -88,8 +140,15 @@ const res = await axios.post(
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center', padding: 16 },
   avatar: { width: 120, height: 120, borderRadius: 60, marginBottom: 16 },
-  label: { fontSize: 16, marginVertical: 4 },
-  bold: { fontWeight: 'bold' },
+  label: { fontSize: 16, alignSelf: 'flex-start', marginTop: 12 },
+  input: {
+    borderWidth: 1,
+    borderColor: '#aaa',
+    borderRadius: 6,
+    width: '100%',
+    padding: 10,
+    marginTop: 4,
+  },
   loader: { flex: 1, justifyContent: 'center' },
   center: { flex: 1, textAlign: 'center', marginTop: 20 },
 });

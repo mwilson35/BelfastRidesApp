@@ -9,37 +9,37 @@ import RiderStack from './src/navigation/RiderStack';
 
 
 export default function App() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [message, setMessage] = useState('');
-  const [role, setRole] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null);  // <-- add this line
+const [email, setEmail] = useState('');
+const [password, setPassword] = useState('');
+const [message, setMessage] = useState('');
+const [role, setRole] = useState<string | null>(null);
+const [token, setToken] = useState<string | null>(null);
 
-  // 1. Logout function
-  const logout = () => {
-    setRole(null);
-    setToken(null);                 // <-- reset token on logout
-    setUsername('');
-    setPassword('');
-    setMessage('');
-  };
+const logout = () => {
+  setRole(null);
+  setToken(null);
+  setEmail('');
+  setPassword('');
+  setMessage('');
+};
 
-  const handleLogin = async () => {
-    try {
-      const response = await axios.post(
-        'http://192.168.33.3:5000/api/auth/login',
-        { username, password }
-      );
-      const { accessToken } = response.data;
-      setMessage('Login successful!');
-      setToken(accessToken);                 // <-- save token here
-      const decoded: any = jwtDecode(accessToken);
-      setRole(decoded.role);
-    } catch (error: any) {
-      setMessage('Login failed.');
-      Alert.alert('Login failed', error?.response?.data?.message || 'Unknown error');
-    }
-  };
+const handleLogin = async () => {
+  try {
+    const response = await axios.post(
+      'http://192.168.33.3:5000/api/auth/login',
+      { email, password } // 👈 switched from username to email
+    );
+    const { accessToken } = response.data;
+    setMessage('Login successful!');
+    setToken(accessToken);
+    const decoded: any = jwtDecode(accessToken);
+    setRole(decoded.role);
+  } catch (error: any) {
+    setMessage('Login failed.');
+    Alert.alert('Login failed', error?.response?.data?.message || 'Unknown error');
+  }
+};
+
 
   if (role === 'driver') {
     return <DriverDashboard logout={logout} token={token} />; // <-- pass token here too if needed
@@ -66,21 +66,22 @@ if (role === 'rider') {
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Login</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Username"
-        value={username}
-        autoCapitalize="none"
-        onChangeText={setUsername}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        secureTextEntry
-        autoCapitalize="none"
-        onChangeText={setPassword}
-      />
+<TextInput
+  style={styles.input}
+  placeholder="Email"
+  value={email}
+  autoCapitalize="none"
+  onChangeText={setEmail}
+/>
+<TextInput
+  style={styles.input}
+  placeholder="Password"
+  value={password}
+  secureTextEntry
+  autoCapitalize="none"
+  onChangeText={setPassword}
+/>
+
       <Button title="Login" onPress={handleLogin} />
       {message ? <Text style={styles.message}>{message}</Text> : null}
     </View>
