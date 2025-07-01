@@ -112,13 +112,10 @@ const ProfileScreen = ({ token }: { token: string }) => {
       )}
       <Button title="Change Profile Photo" onPress={handlePickPhoto} />
 
-      <Text style={styles.label}>Name:</Text>
-      <TextInput
-        style={styles.input}
-        value={name}
-        onChangeText={setName}
-        editable={editMode}
-      />
+<Text style={styles.label}>
+  <Text style={styles.bold}>Name:</Text> {profile.username}
+</Text>
+
 
       <Text style={styles.label}>Email:</Text>
       <TextInput
@@ -149,8 +146,10 @@ const styles = StyleSheet.create({
     padding: 10,
     marginTop: 4,
   },
+  bold: { fontWeight: 'bold' },
   loader: { flex: 1, justifyContent: 'center' },
   center: { flex: 1, textAlign: 'center', marginTop: 20 },
 });
+
 
 export default ProfileScreen;
