@@ -1,97 +1,43 @@
 import React, { useState } from 'react';
-import { View, TextInput, Button, Text, StyleSheet, Alert } from 'react-native';
-import axios from 'axios';
-import { jwtDecode } from 'jwt-decode';
-import RiderDashboard from './src/components/RiderDashboard';
-import DriverDashboard from './src/components/DriverDashboard';
+import { View, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import RiderStack from './src/navigation/RiderStack';
-
+import DriverDashboard from './src/components/DriverDashboard';
+import LoginScreen from './src/components/LoginScreen';
 
 export default function App() {
-const [email, setEmail] = useState('');
-const [password, setPassword] = useState('');
-const [message, setMessage] = useState('');
-const [role, setRole] = useState<string | null>(null);
-const [token, setToken] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
 
-const logout = () => {
-  setRole(null);
-  setToken(null);
-  setEmail('');
-  setPassword('');
-  setMessage('');
-};
-
-const handleLogin = async () => {
-  try {
-    const response = await axios.post(
-      'http://192.168.33.3:5000/api/auth/login',
-      { email, password } // 👈 switched from username to email
-    );
-    const { accessToken } = response.data;
-    setMessage('Login successful!');
+  const handleLogin = (userRole: string, accessToken: string) => {
+    setRole(userRole);
     setToken(accessToken);
-    const decoded: any = jwtDecode(accessToken);
-    setRole(decoded.role);
-  } catch (error: any) {
-    setMessage('Login failed.');
-    Alert.alert('Login failed', error?.response?.data?.message || 'Unknown error');
-  }
-};
+  };
 
+  const logout = () => {
+    setRole(null);
+    setToken(null);
+  };
 
   if (role === 'driver') {
-    return <DriverDashboard logout={logout} token={token} />; // <-- pass token here too if needed
+    return <DriverDashboard logout={logout} token={token} />;
   }
 
-if (role === 'rider') {
-  return (
-    <NavigationContainer>
-<RiderStack logout={logout} token={token || ''} />
-    </NavigationContainer>
-  );
-}
-
-
+  if (role === 'rider') {
+    return (
+      <NavigationContainer>
+        <RiderStack logout={logout} token={token || ''} />
+      </NavigationContainer>
+    );
+  }
 
   if (role === 'admin') {
     return (
-      <View style={styles.center}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <Text>Admin Dashboard (placeholder)</Text>
       </View>
     );
   }
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.heading}>Login</Text>
-<TextInput
-  style={styles.input}
-  placeholder="Email"
-  value={email}
-  autoCapitalize="none"
-  onChangeText={setEmail}
-/>
-<TextInput
-  style={styles.input}
-  placeholder="Password"
-  value={password}
-  secureTextEntry
-  autoCapitalize="none"
-  onChangeText={setPassword}
-/>
-
-      <Button title="Login" onPress={handleLogin} />
-      {message ? <Text style={styles.message}>{message}</Text> : null}
-    </View>
-  );
+  return <LoginScreen onLogin={handleLogin} />;
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 24 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  input: { borderWidth: 1, marginBottom: 12, padding: 8, borderRadius: 4 },
-  heading: { fontSize: 24, fontWeight: 'bold', marginBottom: 24, textAlign: 'center' },
-  message: { color: 'red', marginTop: 10, textAlign: 'center' }
-});
