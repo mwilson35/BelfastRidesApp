@@ -60,9 +60,10 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
         <Text style={styles.link}>Don’t have an account? Sign up</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => Alert.alert('Not implemented', 'Password recovery goes here.')}>
-        <Text style={styles.link}>Forgot password?</Text>
-      </TouchableOpacity>
+<TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+  <Text style={styles.link}>Forgot password?</Text>
+</TouchableOpacity>
+
 
       {message ? <Text style={styles.message}>{message}</Text> : null}
     </View>

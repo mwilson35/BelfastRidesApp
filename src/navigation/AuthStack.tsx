@@ -2,10 +2,12 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LoginScreen from '../components/LoginScreen';
 import SignupScreen from '../components/SignupScreen';
+import ForgotPasswordScreen from '../components/ForgotPasswordScreen';
 
 export type AuthStackParamList = {
   Login: undefined;
   Signup: undefined;
+  ForgotPassword: undefined;
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -21,6 +23,7 @@ const AuthStack: React.FC<Props> = ({ onLogin }) => {
         {(props) => <LoginScreen {...props} onLogin={onLogin} />}
       </Stack.Screen>
       <Stack.Screen name="Signup" component={SignupScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
     </Stack.Navigator>
   );
 };
