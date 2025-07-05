@@ -7,7 +7,8 @@ import { useRoute, useFocusEffect } from '@react-navigation/native';
 import { TouchableOpacity, Modal, Pressable } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
-
+import { io } from 'socket.io-client';
+import { useEffect } from 'react';
 
 
 
@@ -17,6 +18,8 @@ type Props = {
   token: string;
 };
 
+
+const socket = io('http://192.168.33.3:5000');
 
 
 const requestRide = async (pickupLocation: string, destination: string, token: string | null) => {
@@ -29,6 +32,31 @@ const requestRide = async (pickupLocation: string, destination: string, token: s
   return response.data;
 };
 const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
+  useEffect(() => {
+    if (!token) return;
+
+    try {
+      const payload: any = JSON.parse(atob(token.split('.')[1]));
+      const riderId = payload.id;
+      if (riderId) {
+        socket.emit('registerRider', riderId);
+        console.log('📡 registerRider sent for', riderId);
+      }
+    } catch (err) {
+      console.error('Token decode failed:', err);
+    }
+
+    socket.on('driverAccepted', (data) => {
+      console.log('🎉 driverAccepted event received:', data);
+      Alert.alert('Driver Accepted', `Your driver has accepted the ride.`);
+    });
+
+    return () => {
+      socket.off('driverAccepted');
+    };
+  }, [token]);
+
+  
   const [menuVisible, setMenuVisible] = useState(false);
 
   const navigation = useNavigation(); // 👈 THIS IS THE ONE
