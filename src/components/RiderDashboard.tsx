@@ -60,10 +60,20 @@ socket.on('rideStarted', () => {
 
 socket.on('rideCompleted', (data) => {
   console.log('✅ Ride completed:', data);
-  setRideStatus('completed');
-  setRequestedRide(null);
   Alert.alert('Ride Completed', `Fare: $${data.fare}`);
+
+  setRideStatus('completed');
+
+  setTimeout(() => {
+    setRideStatus(null);
+    setRequestedRide(null);
+    setPreview(null);
+    setPickupLocation('');
+    setDestination('');
+    setMapKey(prev => prev + 1); // reset map to remove route
+  }, 5000); // 5 seconds of gratitude before full reset
 });
+
 
 
 return () => {
@@ -303,23 +313,26 @@ return () => {
     <Text>Duration: {requestedRide.duration}</Text>
     <Text>Fare: {requestedRide.estimatedFare}</Text>
 
-    {/* Cancel Button with Confirmation */}
-    <Button
-      title="Cancel Ride"
-      color="#f33"
-      onPress={() => {
-        Alert.alert(
-          'Cancel Ride?',
-          'Are you sure you want to cancel this ride?',
-          [
-            { text: 'No', style: 'cancel' },
-            { text: 'Yes, Cancel', style: 'destructive', onPress: cancelRide }
-          ]
-        );
-      }}
-    />
+    {rideStatus !== 'in_progress' && rideStatus !== 'completed' && (
+      <Button
+        title="Cancel Ride"
+        color="#f33"
+        onPress={() => {
+          Alert.alert(
+            'Cancel Ride?',
+            'Are you sure you want to cancel this ride?',
+            [
+              { text: 'No', style: 'cancel' },
+              { text: 'Yes, Cancel', style: 'destructive', onPress: cancelRide }
+            ]
+          );
+        }}
+      />
+    )}
   </View>
 )}
+
+
 
 
 <View style={styles.mapContainer}>
