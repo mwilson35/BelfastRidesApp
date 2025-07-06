@@ -30,4 +30,13 @@ export default StyleSheet.create({
     alignItems: 'center',
     padding: 10,
   },
+  statusBox: {
+    backgroundColor: '#f0f8ff',
+    padding: 12,
+    marginHorizontal: 12,
+    marginBottom: 10,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#4a90e2',
+  },
 });

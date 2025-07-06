@@ -46,14 +46,32 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
       console.error('Token decode failed:', err);
     }
 
-    socket.on('driverAccepted', (data) => {
-      console.log('🎉 driverAccepted event received:', data);
-      Alert.alert('Driver Accepted', `Your driver has accepted the ride.`);
-    });
+socket.on('driverAccepted', (data) => {
+  console.log('🎉 driverAccepted event received:', data);
+  setRideStatus('accepted');
+  Alert.alert('Driver Accepted', `Your driver has accepted the ride.`);
+});
 
-    return () => {
-      socket.off('driverAccepted');
-    };
+socket.on('rideStarted', () => {
+  console.log('🚕 Ride started');
+  setRideStatus('in_progress');
+  Alert.alert('Ride Started', 'Your ride is now in progress.');
+});
+
+socket.on('rideCompleted', (data) => {
+  console.log('✅ Ride completed:', data);
+  setRideStatus('completed');
+  setRequestedRide(null);
+  Alert.alert('Ride Completed', `Fare: $${data.fare}`);
+});
+
+
+return () => {
+  socket.off('driverAccepted');
+  socket.off('rideStarted');
+  socket.off('rideCompleted');
+};
+
   }, [token]);
 
   
@@ -68,6 +86,8 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
   const [mapKey, setMapKey] = useState(0);
   const [loading, setLoading] = useState(false);
   const [requestLoading, setRequestLoading] = useState(false);
+  const [rideStatus, setRideStatus] = useState<'requested' | 'accepted' | 'in_progress' | 'completed' | 'cancelled' | null>(null);
+
 
   useFocusEffect(
     React.useCallback(() => {
@@ -255,6 +275,26 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
           {requestLoading && <ActivityIndicator style={{ marginTop: 8 }} />}
         </View>
       )}
+
+
+      {rideStatus === 'accepted' && (
+  <View style={styles.statusBox}>
+    <Text>🚗 Driver en route...</Text>
+  </View>
+)}
+
+{rideStatus === 'in_progress' && (
+  <View style={styles.statusBox}>
+    <Text>🕒 Ride in progress...</Text>
+  </View>
+)}
+
+{rideStatus === 'completed' && (
+  <View style={styles.statusBox}>
+    <Text>✅ Ride completed. Thanks for riding with us!</Text>
+  </View>
+)}
+
 
 {requestedRide && (
   <View style={styles.previewBox}>
