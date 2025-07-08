@@ -9,6 +9,8 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import { io } from 'socket.io-client';
 import { useEffect } from 'react';
+import RatingModal from './RatingModal';
+
 
 
 
@@ -60,19 +62,17 @@ socket.on('rideStarted', () => {
 
 socket.on('rideCompleted', (data) => {
   console.log('✅ Ride completed:', data);
-  Alert.alert('Ride Completed', `Fare: $${data.fare}`);
+  Alert.alert('Ride Completed', `Fare: £${data.fare}`);
 
   setRideStatus('completed');
 
+  // Delay modal just slightly for a cleaner user experience
   setTimeout(() => {
-    setRideStatus(null);
-    setRequestedRide(null);
-    setPreview(null);
-    setPickupLocation('');
-    setDestination('');
-    setMapKey(prev => prev + 1); // reset map to remove route
-  }, 5000); // 5 seconds of gratitude before full reset
+    setRateeId(data.driverId); // Use the driverId sent from backend
+    setShowRatingModal(true);
+  }, 500);
 });
+
 
 
 
@@ -83,6 +83,17 @@ return () => {
 };
 
   }, [token]);
+
+  const handlePostRatingCleanup = () => {
+  setShowRatingModal(false);
+  setRateeId(null);
+  setRideStatus(null);
+  setRequestedRide(null);
+  setPreview(null);
+  setPickupLocation('');
+  setDestination('');
+  setMapKey(prev => prev + 1); // clear map route
+};
 
   
   const [menuVisible, setMenuVisible] = useState(false);
@@ -97,6 +108,9 @@ return () => {
   const [loading, setLoading] = useState(false);
   const [requestLoading, setRequestLoading] = useState(false);
   const [rideStatus, setRideStatus] = useState<'requested' | 'accepted' | 'in_progress' | 'completed' | 'cancelled' | null>(null);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+const [rateeId, setRateeId] = useState<number | null>(null);
+
 
 
   useFocusEffect(
@@ -338,6 +352,17 @@ return () => {
 <View style={styles.mapContainer}>
 <MapScreen key={mapKey} encodedPolyline={(requestedRide || preview)?.encodedPolyline} />
 </View>
+{showRatingModal && rateeId && (
+<RatingModal
+  rideId={requestedRide?.rideId}
+  rateeId={rateeId}
+  visible={showRatingModal}
+  token={token}
+  onClose={() => setShowRatingModal(false)}
+  onSubmitted={handlePostRatingCleanup} // ✅ match the prop name
+/>
+
+)}
 
     </View>
   );
