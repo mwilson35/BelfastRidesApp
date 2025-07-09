@@ -214,57 +214,98 @@ const [rateeId, setRateeId] = useState<number | null>(null);
     onPress={() => setMenuVisible(false)}
   >
     <View
-  style={{
-    position: 'absolute',
-    top: 55,
-    left: 20,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    elevation: 4,
-    minWidth: 150,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-  }}
->
-  {/* 💥 Profile button */}
-  <Pressable
-    onPress={() => {
-      setMenuVisible(false);
-      navigation.navigate('Profile' as never);
-    }}
-    style={{
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: 8,
-    }}
-  >
-    <MaterialIcons name="person" size={22} color="#333" />
-    <Text style={{ marginLeft: 10, fontSize: 16, color: '#333' }}>Profile</Text>
-  </Pressable>
+      style={{
+        position: 'absolute',
+        top: 55,
+        left: 20,
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        elevation: 4,
+        minWidth: 180,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
+      }}
+    >
+      {/* 👤 Profile */}
+      <Pressable
+        onPress={() => {
+          setMenuVisible(false);
+          navigation.navigate('Profile' as never);
+        }}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingVertical: 8,
+        }}
+      >
+        <MaterialIcons name="person" size={22} color="#333" />
+        <Text style={{ marginLeft: 10, fontSize: 16, color: '#333' }}>
+          Profile
+        </Text>
+      </Pressable>
 
-  {/* 🔚 Logout button */}
-  <Pressable
-    onPress={() => {
-      setMenuVisible(false);
-      logout();
-    }}
-    style={{
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: 8,
-    }}
-  >
-    <MaterialIcons name="logout" size={22} color="#e53e3e" />
-    <Text style={{ marginLeft: 10, fontSize: 16, color: '#333' }}>Logout</Text>
-  </Pressable>
-</View>
+      {/* 🕓 Ride History */}
+      <Pressable
+        onPress={() => {
+          setMenuVisible(false);
+          navigation.navigate('RideHistory' as never);
+        }}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingVertical: 8,
+        }}
+      >
+        <MaterialIcons name="history" size={22} color="#333" />
+        <Text style={{ marginLeft: 10, fontSize: 16, color: '#333' }}>
+          Ride History
+        </Text>
+      </Pressable>
 
+      {/* ✨ Fake Refer Option (for future) */}
+      <Pressable
+        onPress={() => {
+          setMenuVisible(false);
+Alert.alert('Coming Soon', 'This feature is not available yet.');
+        }}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingVertical: 8,
+        }}
+      >
+        <MaterialIcons name="star-outline" size={22} color="#aaa" />
+        <Text style={{ marginLeft: 10, fontSize: 16, color: '#aaa' }}>
+          Refer a Friend
+        </Text>
+      </Pressable>
+
+      {/* 🔚 Logout */}
+      <Pressable
+        onPress={() => {
+          setMenuVisible(false);
+          logout();
+        }}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingVertical: 8,
+          marginTop: 8,
+        }}
+      >
+        <MaterialIcons name="logout" size={22} color="#e53e3e" />
+        <Text style={{ marginLeft: 10, fontSize: 16, color: '#e53e3e' }}>
+          Logout
+        </Text>
+      </Pressable>
+    </View>
   </Pressable>
 </Modal>
+
 
 
 
