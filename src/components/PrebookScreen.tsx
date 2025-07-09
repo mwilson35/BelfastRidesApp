@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Platform } from 'react-native';
+import { View, Text, TextInput, Button, Platform, Alert } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 type Props = {
@@ -36,6 +36,51 @@ const response = await fetch('http://192.168.33.3:5000/api/prebook/preview', {
       console.error('Error previewing ride:', err);
     }
   };
+
+  const confirmBooking = async () => {
+  try {
+    const response = await fetch('http://192.168.33.3:5000/api/prebook/schedule', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        pickup: previewData.pickupLocation,
+        destination: previewData.destination,
+        scheduled_time: date.toISOString(),
+        pickup_lat: previewData.pickupLat,
+        pickup_lng: previewData.pickupLng,
+        destination_lat: previewData.destinationLat,
+        destination_lng: previewData.destinationLng,
+        encoded_polyline: previewData.encodedPolyline,
+        estimated_fare: parseFloat(previewData.estimatedFare.replace('£', '')),
+        duration_minutes: parseInt(previewData.duration.replace(' mins', ''), 10)
+      })
+    });
+
+    if (response.status === 409) {
+      const data = await response.json();
+      Alert.alert('Slot Unavailable', data.message || 'Time slot already booked.');
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error('Booking failed');
+    }
+
+    const data = await response.json();
+    Alert.alert('Ride booked!', `ID: ${data.rideId}`);
+    setPreviewData(null);
+    setPickup('');
+    setDestination('');
+  } catch (err) {
+    console.error('Error booking ride:', err);
+    Alert.alert('Booking failed', (err as Error).message);
+  }
+};
+
+
 
 
   const onChangeDate = (_: any, selectedDate?: Date) => {
@@ -96,6 +141,8 @@ const response = await fetch('http://192.168.33.3:5000/api/prebook/preview', {
 
       {previewData && (
         <View style={{ marginTop: 24 }}>
+          <Button title="Confirm Booking" onPress={confirmBooking} />
+
           <Text>Distance: {previewData.distance}</Text>
           <Text>Duration: {previewData.duration}</Text>
           <Text>Estimated Fare: {previewData.estimatedFare}</Text>
