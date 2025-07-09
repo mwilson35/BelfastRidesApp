@@ -33,16 +33,18 @@ const RiderStack: React.FC<Props> = ({ logout, token }) => {
         )}
       </Tab.Screen>
 
-      <Tab.Screen
-        name="Prebook"
-        options={{
-          tabBarLabel: 'Prebook',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="event" color={color} size={size} />
-          ),
-        }}
-        component={PrebookScreen}
-      />
+<Tab.Screen
+  name="Prebook"
+  options={{
+    tabBarLabel: 'Prebook',
+    tabBarIcon: ({ color, size }) => (
+      <MaterialIcons name="event" color={color} size={size} />
+    ),
+  }}
+>
+  {(props) => <PrebookScreen {...props} token={token} />}
+</Tab.Screen>
+
     </Tab.Navigator>
   );
 };
