@@ -3,6 +3,9 @@ import { View, Text, TextInput, Button, Platform, Pressable } from 'react-native
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
 import { Alert } from 'react-native';
+import MapView, { Polyline, Marker } from 'react-native-maps';
+import PrebookMap from './PrebookMap';
+
 
 
 type Props = {
@@ -132,18 +135,35 @@ Alert.alert('Booking failed', (err as Error).message);
 
       <Button title="Preview Ride" onPress={previewRide} />
 
-      {previewData && (
-        <View style={{ marginTop: 24, padding: 12, borderWidth: 1, borderRadius: 6 }}>
-          <Text>Distance: {previewData.distance}</Text>
-          <Text>Duration: {previewData.duration}</Text>
-          <Text>Fare: {previewData.estimatedFare}</Text>
-          <Text style={{ marginBottom: 12 }}>Est. Arrival: {dayjs(date).add(parseInt(previewData.duration), 'minute').format('HH:mm')}</Text>
+{previewData && (
+  <View style={{ marginTop: 24, padding: 12, borderWidth: 1, borderRadius: 6 }}>
+    <Text>Distance: {previewData.distance}</Text>
+    <Text>Duration: {previewData.duration}</Text>
+    <Text>Fare: {previewData.estimatedFare}</Text>
+    <Text style={{ marginBottom: 12 }}>
+      Est. Arrival: {dayjs(date).add(parseInt(previewData.duration), 'minute').format('HH:mm')}
+    </Text>
 
-          <Button title="Confirm Booking" onPress={confirmBooking} />
-          <View style={{ height: 8 }} />
-          <Button title="Clear Preview" color="gray" onPress={() => setPreviewData(null)} />
-        </View>
-      )}
+    <View style={{ height: 200, marginVertical: 12 }}>
+<PrebookMap encodedPolyline={previewData.encodedPolyline} />
+
+    </View>
+
+    <Button title="Confirm Booking" onPress={confirmBooking} />
+    <View style={{ height: 8 }} />
+    <Button
+      title="Clear Preview"
+      color="gray"
+      onPress={() => {
+        setPreviewData(null);
+        setPickup('');
+        setDestination('');
+        setDate(new Date());
+      }}
+    />
+  </View>
+)}
+
     </View>
   );
 };
