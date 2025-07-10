@@ -3,13 +3,17 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import RiderDashboard from '../components/RiderDashboard';
 import ProfileScreen from '../components/ProfileScreen';
 import RideHistoryScreen from '../components/RideHistoryScreen';
+import MyScheduledRidesScreen from '../components/MyScheduledRidesScreen';
+
 
 
 export type RiderDashboardStackParamList = {
   MainDashboard: undefined;
   Profile: undefined;
-  RideHistory: undefined; // ← add this
+  RideHistory: undefined;
+  MyScheduledRides: undefined; // 👈 Add this line
 };
+
 
 
 const Stack = createNativeStackNavigator<RiderDashboardStackParamList>();
@@ -28,6 +32,11 @@ const RiderDashboardStack = ({ token, logout }: { token: string; logout: () => v
 <Stack.Screen name="RideHistory">
   {(props) => <RideHistoryScreen {...props} token={token} />}
 </Stack.Screen>
+
+<Stack.Screen name="MyScheduledRides">
+  {(props) => <MyScheduledRidesScreen {...props} token={token} />}
+</Stack.Screen>
+
 
 
 

@@ -15,6 +15,7 @@ import RatingModal from './RatingModal';
 
 
 
+
 type Props = {
   logout: () => void;
   token: string;
@@ -265,6 +266,24 @@ const [rateeId, setRateeId] = useState<number | null>(null);
           Ride History
         </Text>
       </Pressable>
+
+      <Pressable
+  onPress={() => {
+    setMenuVisible(false);
+    navigation.navigate('MyScheduledRides' as never);
+  }}
+  style={{
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  }}
+>
+  <MaterialIcons name="event-note" size={22} color="#333" />
+  <Text style={{ marginLeft: 10, fontSize: 16, color: '#333' }}>
+    My Scheduled Rides
+  </Text>
+</Pressable>
+
 
       {/* ✨ Fake Refer Option (for future) */}
       <Pressable
