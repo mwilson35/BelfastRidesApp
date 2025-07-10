@@ -1,34 +1,39 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Platform, Alert } from 'react-native';
+import { View, Text, TextInput, Button, Platform, Pressable } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import dayjs from 'dayjs';
+import { Alert } from 'react-native';
+
 
 type Props = {
   token: string;
 };
+
 const PrebookScreen: React.FC<Props> = ({ token }) => {
   const [pickup, setPickup] = useState('');
   const [destination, setDestination] = useState('');
   const [date, setDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
+  const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
   const [previewData, setPreviewData] = useState<any>(null);
+
+  const formattedDate = dayjs(date).format('ddd, D MMM YYYY');
+  const formattedTime = dayjs(date).format('HH:mm');
+
+  const onChangeDateTime = (_: any, selected?: Date) => {
+    setShowPicker(false);
+    if (selected) setDate(selected);
+  };
 
   const previewRide = async () => {
     try {
-const response = await fetch('http://192.168.33.3:5000/api/prebook/preview', {
+      const response = await fetch('http://192.168.33.3:5000/api/prebook/preview', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          pickupLocation: pickup,
-          destination: destination
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pickupLocation: pickup, destination })
       });
 
-      if (!response.ok) {
-        throw new Error('Preview failed');
-      }
+      if (!response.ok) throw new Error('Preview failed');
 
       const data = await response.json();
       setPreviewData(data);
@@ -38,69 +43,45 @@ const response = await fetch('http://192.168.33.3:5000/api/prebook/preview', {
   };
 
   const confirmBooking = async () => {
-  try {
-    const response = await fetch('http://192.168.33.3:5000/api/prebook/schedule', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        pickup: previewData.pickupLocation,
-        destination: previewData.destination,
-        scheduled_time: date.toISOString(),
-        pickup_lat: previewData.pickupLat,
-        pickup_lng: previewData.pickupLng,
-        destination_lat: previewData.destinationLat,
-        destination_lng: previewData.destinationLng,
-        encoded_polyline: previewData.encodedPolyline,
-        estimated_fare: parseFloat(previewData.estimatedFare.replace('£', '')),
-        duration_minutes: parseInt(previewData.duration.replace(' mins', ''), 10)
-      })
-    });
+    try {
+      const response = await fetch('http://192.168.33.3:5000/api/prebook/schedule', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          pickup: previewData.pickupLocation,
+          destination: previewData.destination,
+          scheduled_time: date.toISOString(),
+          pickup_lat: previewData.pickupLat,
+          pickup_lng: previewData.pickupLng,
+          destination_lat: previewData.destinationLat,
+          destination_lng: previewData.destinationLng,
+          encoded_polyline: previewData.encodedPolyline,
+          estimated_fare: parseFloat(previewData.estimatedFare.replace('£', '')),
+          duration_minutes: parseInt(previewData.duration.replace(' mins', ''), 10)
+        })
+      });
 
-    if (response.status === 409) {
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text);
+      }
+
       const data = await response.json();
-      Alert.alert('Slot Unavailable', data.message || 'Time slot already booked.');
-      return;
-    }
-
-    if (!response.ok) {
-      throw new Error('Booking failed');
-    }
-
-    const data = await response.json();
-    Alert.alert('Ride booked!', `ID: ${data.rideId}`);
-    setPreviewData(null);
-    setPickup('');
-    setDestination('');
-  } catch (err) {
-    console.error('Error booking ride:', err);
-    Alert.alert('Booking failed', (err as Error).message);
-  }
-};
-
-
-
-
-  const onChangeDate = (_: any, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (selectedDate) setDate(selectedDate);
-  };
-
-  const onChangeTime = (_: any, selectedTime?: Date) => {
-    setShowTimePicker(Platform.OS === 'ios');
-    if (selectedTime) {
-      const updatedDate = new Date(date);
-      updatedDate.setHours(selectedTime.getHours());
-      updatedDate.setMinutes(selectedTime.getMinutes());
-      setDate(updatedDate);
+Alert.alert('Ride booked!', `ID: ${data.rideId}`);
+      setPreviewData(null);
+      setPickup('');
+      setDestination('');
+    } catch (err: unknown) {
+Alert.alert('Booking failed', (err as Error).message);
     }
   };
 
   return (
     <View style={{ flex: 1, padding: 20 }}>
-      <Text>Pickup Location</Text>
+      <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>Pickup Location</Text>
       <TextInput
         value={pickup}
         onChangeText={setPickup}
@@ -108,7 +89,7 @@ const response = await fetch('http://192.168.33.3:5000/api/prebook/preview', {
         style={{ borderBottomWidth: 1, marginBottom: 16 }}
       />
 
-      <Text>Destination</Text>
+      <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>Destination</Text>
       <TextInput
         value={destination}
         onChangeText={setDestination}
@@ -116,43 +97,55 @@ const response = await fetch('http://192.168.33.3:5000/api/prebook/preview', {
         style={{ borderBottomWidth: 1, marginBottom: 16 }}
       />
 
-      <Button title="Select Date" onPress={() => setShowDatePicker(true)} />
-      {showDatePicker && (
+      <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>Scheduled Date & Time</Text>
+      <Pressable
+        onPress={() => {
+          setPickerMode('date');
+          setShowPicker(true);
+        }}
+        style={{
+          padding: 12,
+          borderWidth: 1,
+          borderRadius: 6,
+          marginBottom: 12
+        }}
+      >
+        <Text>{`${formattedDate} · ${formattedTime}`}</Text>
+      </Pressable>
+
+      {showPicker && (
         <DateTimePicker
           value={date}
-          mode="date"
+          mode={pickerMode}
           display="default"
-          onChange={onChangeDate}
+          onChange={(e, selected) => {
+            onChangeDateTime(e, selected);
+            if (pickerMode === 'date') {
+              setTimeout(() => {
+                setPickerMode('time');
+                setShowPicker(true);
+              }, 100);
+            }
+          }}
         />
       )}
 
-      <Button title="Select Time" onPress={() => setShowTimePicker(true)} />
-      {showTimePicker && (
-        <DateTimePicker
-          value={date}
-          mode="time"
-          display="default"
-          onChange={onChangeTime}
-        />
-      )}
-      <View style={{ marginTop: 24 }}>
-        <Button title="Preview Ride" onPress={previewRide} />
-      </View>
+      <Button title="Preview Ride" onPress={previewRide} />
 
       {previewData && (
-        <View style={{ marginTop: 24 }}>
-          <Button title="Confirm Booking" onPress={confirmBooking} />
-
+        <View style={{ marginTop: 24, padding: 12, borderWidth: 1, borderRadius: 6 }}>
           <Text>Distance: {previewData.distance}</Text>
           <Text>Duration: {previewData.duration}</Text>
-          <Text>Estimated Fare: {previewData.estimatedFare}</Text>
-          <Text>Date: {date.toLocaleDateString()}</Text>
-          <Text>Time: {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+          <Text>Fare: {previewData.estimatedFare}</Text>
+          <Text style={{ marginBottom: 12 }}>Est. Arrival: {dayjs(date).add(parseInt(previewData.duration), 'minute').format('HH:mm')}</Text>
+
+          <Button title="Confirm Booking" onPress={confirmBooking} />
+          <View style={{ height: 8 }} />
+          <Button title="Clear Preview" color="gray" onPress={() => setPreviewData(null)} />
         </View>
       )}
     </View>
   );
 };
-
 
 export default PrebookScreen;
