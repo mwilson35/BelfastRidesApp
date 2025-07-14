@@ -344,7 +344,9 @@ Alert.alert('Coming Soon', 'This feature is not available yet.');
 />
         <View style={styles.buttonRow}>
           <Button title="Preview Ride" onPress={handlePreviewRide} />
-          {preview && <Button title="Clear Preview" onPress={handleClearPreview} color="#f77" />}
+{preview && !requestedRide && !['accepted', 'in_progress'].includes(rideStatus || '') && (
+  <Button title="Clear Preview" onPress={handleClearPreview} color="#f77" />
+)}
         </View>
       </View>
 
