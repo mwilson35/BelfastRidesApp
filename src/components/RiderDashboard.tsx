@@ -10,6 +10,8 @@ import { useNavigation } from '@react-navigation/native';
 import { io } from 'socket.io-client';
 import { useEffect } from 'react';
 import RatingModal from './RatingModal';
+import LocationAutocompleteInput from './LocationAutocompleteInput'; // at top if not already
+
 
 
 
@@ -329,18 +331,17 @@ Alert.alert('Coming Soon', 'This feature is not available yet.');
 
 
       <View style={styles.inputBox}>
-        <TextInput
-          style={styles.input}
-          placeholder="Pickup location"
-          value={pickupLocation}
-          onChangeText={setPickupLocation}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Destination"
-          value={destination}
-          onChangeText={setDestination}
-        />
+<LocationAutocompleteInput
+  label="Pickup location"
+  value={pickupLocation}
+  onChange={setPickupLocation}
+/>
+
+<LocationAutocompleteInput
+  label="Destination"
+  value={destination}
+  onChange={setDestination}
+/>
         <View style={styles.buttonRow}>
           <Button title="Preview Ride" onPress={handlePreviewRide} />
           {preview && <Button title="Clear Preview" onPress={handleClearPreview} color="#f77" />}
