@@ -30,7 +30,7 @@ const PrebookScreen: React.FC<Props> = ({ token }) => {
 
   const previewRide = async () => {
     try {
-      const response = await fetch('http://192.168.33.3:5000/api/prebook/preview', {
+      const response = await fetch('http://192.168.33.5:5000/api/prebook/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pickupLocation: pickup, destination })
@@ -47,7 +47,7 @@ const PrebookScreen: React.FC<Props> = ({ token }) => {
 
   const confirmBooking = async () => {
     try {
-      const response = await fetch('http://192.168.33.3:5000/api/prebook/schedule', {
+      const response = await fetch('http://192.168.33.5:5000/api/prebook/schedule', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

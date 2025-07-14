@@ -14,7 +14,7 @@ type Props = {
   onToggle: () => void;
 };
 
-const BACKEND_URL = 'http://192.168.33.3:5000';
+const BACKEND_URL = 'http://192.168.33.5:5000';
 
 const RideHistoryItem: React.FC<Props> = ({ ride, expanded, onToggle }) => {
   const [mapUrl, setMapUrl] = useState('');

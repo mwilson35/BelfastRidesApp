@@ -21,7 +21,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post('http://192.168.33.3:5000/api/auth/login', {
+      const response = await axios.post('http://192.168.33.5:5000/api/auth/login', {
         email,
         password,
       });

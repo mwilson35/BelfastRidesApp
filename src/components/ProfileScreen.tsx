@@ -27,7 +27,7 @@ const ProfileScreen = ({ token }: { token: string }) => {
 
   useEffect(() => {
     axios
-      .get('http://192.168.33.3:5000/api/user/profile', {
+      .get('http://192.168.33.5:5000/api/user/profile', {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -58,7 +58,7 @@ const ProfileScreen = ({ token }: { token: string }) => {
 
     try {
       const res = await axios.post(
-        'http://192.168.33.3:5000/api/documents/uploadDocument',
+        'http://192.168.33.5:5000/api/documents/uploadDocument',
         formData,
         {
           headers: {
@@ -78,7 +78,7 @@ const ProfileScreen = ({ token }: { token: string }) => {
   const handleSave = async () => {
     try {
       const res = await axios.put(
-        'http://192.168.33.3:5000/api/user/profile',
+        'http://192.168.33.5:5000/api/user/profile',
         { username: name, email },
         {
           headers: {
@@ -101,7 +101,7 @@ const ProfileScreen = ({ token }: { token: string }) => {
 
   const imageUri = profile.profilePicUrl?.startsWith('http')
     ? profile.profilePicUrl
-    : `http://192.168.33.3:5000/${profile.profilePicUrl}`;
+    : `http://192.168.33.5:5000/${profile.profilePicUrl}`;
 
   return (
     <View style={styles.container}>

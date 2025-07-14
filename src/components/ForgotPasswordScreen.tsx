@@ -9,7 +9,7 @@ const ForgotPasswordScreen = ({ navigation }: any) => {
     if (!email) return Alert.alert('Error', 'Email is required');
 
     try {
-await axios.post('http://192.168.33.3:5000/api/auth/request-password-reset', { email });
+await axios.post('http://192.168.33.5:5000/api/auth/request-password-reset', { email });
       Alert.alert('Email Sent', 'Check your inbox for a reset link.', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);

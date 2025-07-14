@@ -26,7 +26,7 @@ const RatingModal: React.FC<RatingModalProps> = ({ visible, onClose, rideId, rat
     setLoading(true);
     try {
       await axios.post(
-        'http://192.168.33.3:5000/ratings',
+        'http://192.168.33.5:5000/ratings',
         { rideId, rateeId, rating: Number(rating), review, tip: tip ? Number(tip) : 0 },
         { headers: { Authorization: `Bearer ${token}` } }
       );

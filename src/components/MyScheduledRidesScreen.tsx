@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import dayjs from 'dayjs';
 import {
   View,
   Text,
@@ -19,7 +20,10 @@ type Ride = {
   destination: string;
   scheduled_time: string;
   status: string;
+  estimated_fare: number;
+  duration_minutes: number;
 };
+
 
 const MyScheduledRidesScreen: React.FC<Props> = ({ token }) => {
   const [rides, setRides] = useState<Ride[]>([]);
@@ -29,7 +33,7 @@ const MyScheduledRidesScreen: React.FC<Props> = ({ token }) => {
   const fetchRides = async () => {
     setLoading(true);
     try {
-const response = await fetch('http://192.168.33.3:5000/api/prebook/schedule', {
+const response = await fetch('http://192.168.33.5:5000/api/prebook/schedule', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -49,7 +53,7 @@ const response = await fetch('http://192.168.33.3:5000/api/prebook/schedule', {
 
   const cancelRide = async (rideId: number) => {
     try {
-const response = await fetch(`http://192.168.33.3:5000/api/prebook/schedule/${rideId}`, {
+const response = await fetch(`http://192.168.33.5:5000/api/prebook/schedule/${rideId}`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -67,19 +71,32 @@ const response = await fetch(`http://192.168.33.3:5000/api/prebook/schedule/${ri
   };
 
   const renderRide = ({ item }: { item: Ride }) => (
-    <View
-      style={{
-        padding: 16,
-        borderBottomWidth: 1,
-        borderColor: '#ccc',
-        backgroundColor: '#fff',
-      }}
-    >
+<View
+  style={{
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  }}
+>
+
       <Text style={{ fontWeight: 'bold' }}>{item.pickup} → {item.destination}</Text>
-      <Text style={{ marginVertical: 4 }}>
-        Time: {new Date(item.scheduled_time).toLocaleString()}
-      </Text>
-      <Text>Status: {item.status}</Text>
+<Text style={{ marginVertical: 4 }}>
+  {dayjs(item.scheduled_time).format('dddd, MMM D • h:mm A')}
+</Text>
+<View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+  <Text>Fare: £{item.estimated_fare}</Text>
+  <Text>Duration: {item.duration_minutes} min</Text>
+</View>
+
+
+
       {item.status === 'pending' && (
         <View style={{ marginTop: 8 }}>
           <Button

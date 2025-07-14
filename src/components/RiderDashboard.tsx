@@ -22,13 +22,13 @@ type Props = {
 };
 
 
-const socket = io('http://192.168.33.3:5000');
+const socket = io('http://192.168.33.5:5000');
 
 
 const requestRide = async (pickupLocation: string, destination: string, token: string | null) => {
 
   const response = await axios.post(
-    'http://192.168.33.3:5000/api/rides/request',
+    'http://192.168.33.5:5000/api/rides/request',
     { pickupLocation, destination },
     { headers: { Authorization: `Bearer ${token}` } }
   );
@@ -130,7 +130,7 @@ const [rateeId, setRateeId] = useState<number | null>(null);
     setLoading(true);
     setPreview(null);
     try {
-      const response = await fetch('http://192.168.33.3:5000/api/rides/preview', {
+      const response = await fetch('http://192.168.33.5:5000/api/rides/preview', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -157,7 +157,7 @@ const [rateeId, setRateeId] = useState<number | null>(null);
 
   try {
     await axios.post(
-      'http://192.168.33.3:5000/api/rides/cancel',
+      'http://192.168.33.5:5000/api/rides/cancel',
       { rideId: requestedRide.rideId },
       { headers: { Authorization: `Bearer ${token}` } }
     );

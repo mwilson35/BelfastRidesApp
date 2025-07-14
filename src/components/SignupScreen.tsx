@@ -9,7 +9,7 @@ const SignupScreen = ({ navigation }: any) => {
 
   const handleSignup = async () => {
     try {
-      await axios.post('http://192.168.33.3:5000/api/auth/signup', { username: name, email, password });
+      await axios.post('http://192.168.33.5:5000/api/auth/signup', { username: name, email, password });
       Alert.alert('Success', 'Account created! Please log in.');
       navigation.goBack();
     } catch (err: any) {

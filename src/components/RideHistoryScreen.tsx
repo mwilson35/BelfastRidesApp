@@ -23,7 +23,7 @@ const RideHistoryScreen: React.FC<Props> = ({ token }) => {
 
   useEffect(() => {
     axios
-      .get('http://192.168.33.3:5000/api/rides/history', {
+      .get('http://192.168.33.5:5000/api/rides/history', {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then(response => setRideHistory(response.data))
