@@ -8,7 +8,13 @@ import {
   Alert,
   Button,
   RefreshControl,
+  TouchableOpacity,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RiderDashboardStackParamList } from '../navigation/RiderDashboardStack';
+
+
 
 type Props = {
   token: string;
@@ -22,10 +28,12 @@ type Ride = {
   status: string;
   estimated_fare: number;
   duration_minutes: number;
+  encoded_polyline: string;
 };
 
-
 const MyScheduledRidesScreen: React.FC<Props> = ({ token }) => {
+  const navigation = useNavigation<NativeStackNavigationProp<RiderDashboardStackParamList>>();
+
   const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -33,7 +41,7 @@ const MyScheduledRidesScreen: React.FC<Props> = ({ token }) => {
   const fetchRides = async () => {
     setLoading(true);
     try {
-const response = await fetch('http://192.168.33.5:5000/api/prebook/schedule', {
+      const response = await fetch('http://192.168.33.5:5000/api/prebook/schedule', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -53,7 +61,7 @@ const response = await fetch('http://192.168.33.5:5000/api/prebook/schedule', {
 
   const cancelRide = async (rideId: number) => {
     try {
-const response = await fetch(`http://192.168.33.5:5000/api/prebook/schedule/${rideId}`, {
+      const response = await fetch(`http://192.168.33.5:5000/api/prebook/schedule/${rideId}`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -71,47 +79,60 @@ const response = await fetch(`http://192.168.33.5:5000/api/prebook/schedule/${ri
   };
 
   const renderRide = ({ item }: { item: Ride }) => (
-<View
-  style={{
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  }}
->
-
-      <Text style={{ fontWeight: 'bold' }}>{item.pickup} → {item.destination}</Text>
-<Text style={{ marginVertical: 4 }}>
-  {dayjs(item.scheduled_time).format('dddd, MMM D • h:mm A')}
-</Text>
-<View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-  <Text>Fare: £{item.estimated_fare}</Text>
-  <Text>Duration: {item.duration_minutes} min</Text>
-</View>
-
-
-
-      {item.status === 'pending' && (
-        <View style={{ marginTop: 8 }}>
-          <Button
-            title="Cancel Ride"
-            color="#e53935"
-            onPress={() =>
-              Alert.alert('Cancel Ride?', 'Are you sure you want to cancel this ride?', [
-                { text: 'No', style: 'cancel' },
-                { text: 'Yes', onPress: () => cancelRide(item.id), style: 'destructive' },
-              ])
-            }
-          />
+    <TouchableOpacity
+onPress={() => navigation.navigate('ScheduledRideDetails', {
+  ride: {
+    id: item.id,
+    pickup: item.pickup,
+    destination: item.destination,
+    scheduled_time: item.scheduled_time,
+    status: item.status,
+    estimated_fare: item.estimated_fare,
+    duration_minutes: item.duration_minutes,
+    encoded_polyline: item.encoded_polyline,
+  }
+})}
+      activeOpacity={0.7}
+    >
+      <View
+        style={{
+          backgroundColor: '#fff',
+          borderRadius: 12,
+          marginHorizontal: 16,
+          marginVertical: 8,
+          padding: 16,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 2,
+        }}
+      >
+        <Text style={{ fontWeight: 'bold' }}>{item.pickup} → {item.destination}</Text>
+        <Text style={{ marginVertical: 4 }}>
+          {dayjs(item.scheduled_time).format('dddd, MMM D • h:mm A')}
+        </Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <Text>Fare: £{item.estimated_fare}</Text>
+          <Text>Duration: {item.duration_minutes} min</Text>
         </View>
-      )}
-    </View>
+
+        {item.status === 'pending' && (
+          <View style={{ marginTop: 8 }}>
+            <Button
+              title="Cancel Ride"
+              color="#e53935"
+              onPress={() =>
+                Alert.alert('Cancel Ride?', 'Are you sure you want to cancel this ride?', [
+                  { text: 'No', style: 'cancel' },
+                  { text: 'Yes', onPress: () => cancelRide(item.id), style: 'destructive' },
+                ])
+              }
+            />
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
   );
 
   const onRefresh = async () => {
