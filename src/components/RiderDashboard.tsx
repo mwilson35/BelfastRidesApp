@@ -67,13 +67,10 @@ socket.on('rideCompleted', (data) => {
   console.log('✅ Ride completed:', data);
   Alert.alert('Ride Completed', `Fare: £${data.fare}`);
 
-  setRideStatus('completed');
+setRideStatus('completed');
+setRateeId(data.driverId);
+setShowRideSummary(true); // 👈 This replaces the modal trigger
 
-  // Delay modal just slightly for a cleaner user experience
-  setTimeout(() => {
-    setRateeId(data.driverId); // Use the driverId sent from backend
-    setShowRatingModal(true);
-  }, 500);
 });
 
 
@@ -113,6 +110,8 @@ return () => {
   const [rideStatus, setRideStatus] = useState<'requested' | 'accepted' | 'in_progress' | 'completed' | 'cancelled' | null>(null);
   const [showRatingModal, setShowRatingModal] = useState(false);
 const [rateeId, setRateeId] = useState<number | null>(null);
+const [showRideSummary, setShowRideSummary] = useState(false);
+
 
 
 
@@ -376,11 +375,23 @@ Alert.alert('Coming Soon', 'This feature is not available yet.');
   </View>
 )}
 
-{rideStatus === 'completed' && (
+{rideStatus === 'completed' && showRideSummary && (
   <View style={styles.statusBox}>
-    <Text>✅ Ride completed. Thanks for riding with us!</Text>
+    <Text style={{ fontWeight: 'bold', fontSize: 16 }}>✅ Ride Completed!</Text>
+    <Text>Distance: {requestedRide?.distance}</Text>
+    <Text>Duration: {requestedRide?.duration}</Text>
+    <Text>Fare: £{requestedRide?.estimatedFare}</Text>
+
+    <Button
+      title="OK"
+      onPress={() => {
+        setShowRideSummary(false);
+        setShowRatingModal(true);
+      }}
+    />
   </View>
 )}
+
 
 
 {requestedRide && (
