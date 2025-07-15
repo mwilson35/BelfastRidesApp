@@ -12,6 +12,8 @@ import { useEffect } from 'react';
 import RatingModal from './RatingModal';
 import LocationAutocompleteInput from './LocationAutocompleteInput'; // at top if not already
 import DriverDetailsBox from './DriverDetailsBox';
+import styles from '../../css/RiderDashboard.styles';
+
 
 
 
@@ -152,7 +154,7 @@ const [showRideSummary, setShowRideSummary] = useState(false);
   };
 
 
-  const cancelRide = async () => {
+const cancelRide = async () => {
   if (!requestedRide?.rideId) {
     Alert.alert('Error', 'No ride to cancel.');
     return;
@@ -165,11 +167,13 @@ const [showRideSummary, setShowRideSummary] = useState(false);
       { headers: { Authorization: `Bearer ${token}` } }
     );
     Alert.alert('Ride Cancelled', 'Your ride has been successfully cancelled.');
-    handleClearPreview(); // 💥 this clears preview, requestedRide, inputs
+    handleClearPreview();
+    setRideStatus(null); // ✅ THIS FIXES THE DRIVER EN ROUTE + INPUTS
   } catch (err: any) {
     Alert.alert('Cancel Failed', err.response?.data?.message || err.message);
   }
 };
+
 
 
   const handleClearPreview = () => {
@@ -329,43 +333,44 @@ Alert.alert('Coming Soon', 'This feature is not available yet.');
 </Modal>
 
 
-
-
-      <View style={styles.inputBox}>
-<LocationAutocompleteInput
-  label="Pickup location"
-  value={pickupLocation}
-  onChange={setPickupLocation}
-/>
-
-<LocationAutocompleteInput
-  label="Destination"
-  value={destination}
-  onChange={setDestination}
-/>
-        <View style={styles.buttonRow}>
-          <Button title="Preview Ride" onPress={handlePreviewRide} />
-{preview && !requestedRide && !['accepted', 'in_progress'].includes(rideStatus || '') && (
-  <Button title="Clear Preview" onPress={handleClearPreview} color="#f77" />
-)}
-        </View>
-      </View>
-
-      {loading && <ActivityIndicator style={{ margin: 12 }} />}
-
-      {preview && !requestedRide && (
-        <View style={styles.previewBox}>
-          <Text style={styles.previewTitle}>Ride Preview</Text>
-          <Text>Distance: {preview.distance}</Text>
-          <Text>Duration: {preview.duration}</Text>
-          <Text>Fare: {preview.estimatedFare}</Text>
-          <Button title="Request Ride" onPress={handleRequestRide} disabled={requestLoading} /> 
-          {requestLoading && <ActivityIndicator style={{ marginTop: 8 }} />}
-        </View>
+{/* Inputs shown only before ride request */}
+{!requestedRide && !['accepted', 'in_progress', 'completed'].includes(rideStatus || '') && (
+  <View style={styles.inputBox}>
+    <LocationAutocompleteInput
+      label="Pickup location"
+      value={pickupLocation}
+      onChange={setPickupLocation}
+    />
+    <LocationAutocompleteInput
+      label="Destination"
+      value={destination}
+      onChange={setDestination}
+    />
+    <View style={styles.buttonRow}>
+      <Button title="Preview Ride" onPress={handlePreviewRide} />
+      {preview && (
+        <Button title="Clear Preview" onPress={handleClearPreview} color="#f77" />
       )}
+    </View>
+  </View>
+)}
 
+{loading && <ActivityIndicator style={{ margin: 12 }} />}
 
-      {rideStatus === 'accepted' && (
+{/* Ride preview details */}
+{preview && !requestedRide && (
+  <View style={styles.previewBox}>
+    <Text style={styles.previewTitle}>Ride Preview</Text>
+    <Text>Distance: {preview.distance}</Text>
+    <Text>Duration: {preview.duration}</Text>
+    <Text>Fare: {preview.estimatedFare}</Text>
+    <Button title="Request Ride" onPress={handleRequestRide} disabled={requestLoading} />
+    {requestLoading && <ActivityIndicator style={{ marginTop: 8 }} />}
+  </View>
+)}
+
+{/* Ride Status Messages */}
+{rideStatus === 'accepted' && (
   <View style={styles.statusBox}>
     <Text>🚗 Driver en route...</Text>
   </View>
@@ -376,18 +381,19 @@ Alert.alert('Coming Soon', 'This feature is not available yet.');
     <Text>🕒 Ride in progress...</Text>
   </View>
 )}
-{rideStatus && ['accepted', 'in_progress', 'completed'].includes(rideStatus) && requestedRide?.rideId && (
+
+{/* Driver Details */}
+{rideStatus && ['accepted', 'in_progress'].includes(rideStatus) && requestedRide?.rideId && (
   <DriverDetailsBox rideId={requestedRide.rideId} token={token} />
 )}
 
-
+{/* Completed Ride Summary */}
 {rideStatus === 'completed' && showRideSummary && (
   <View style={styles.statusBox}>
     <Text style={{ fontWeight: 'bold', fontSize: 16 }}>✅ Ride Completed!</Text>
     <Text>Distance: {requestedRide?.distance}</Text>
     <Text>Duration: {requestedRide?.duration}</Text>
     <Text>Fare: £{requestedRide?.estimatedFare}</Text>
-
     <Button
       title="OK"
       onPress={() => {
@@ -398,61 +404,47 @@ Alert.alert('Coming Soon', 'This feature is not available yet.');
   </View>
 )}
 
-
-
-{requestedRide && (
-  <View style={styles.previewBox}>
+{/* Active Ride Box */}
+{requestedRide && rideStatus !== 'completed' && (
+  <View style={[styles.previewBox, { position: 'absolute', bottom: 0, width: '100%', zIndex: 5 }]}>
     <Text style={styles.previewTitle}>Ride Requested Successfully!</Text>
     <Text>Distance: {requestedRide.distance}</Text>
     <Text>Duration: {requestedRide.duration}</Text>
     <Text>Fare: {requestedRide.estimatedFare}</Text>
-
-    {rideStatus !== 'in_progress' && rideStatus !== 'completed' && (
+    {rideStatus !== 'in_progress' && (
       <Button
         title="Cancel Ride"
         color="#f33"
         onPress={() => {
-          Alert.alert(
-            'Cancel Ride?',
-            'Are you sure you want to cancel this ride?',
-            [
-              { text: 'No', style: 'cancel' },
-              { text: 'Yes, Cancel', style: 'destructive', onPress: cancelRide }
-            ]
-          );
+          Alert.alert('Cancel Ride?', 'Are you sure?', [
+            { text: 'No', style: 'cancel' },
+            { text: 'Yes, Cancel', style: 'destructive', onPress: cancelRide },
+          ]);
         }}
       />
     )}
   </View>
 )}
 
-
-
-
-<View style={styles.mapContainer}>
-<MapScreen key={mapKey} encodedPolyline={(requestedRide || preview)?.encodedPolyline} />
+{/* Map View */}
+<View style={{ flex: 1, marginTop: 8 }}>
+  <MapScreen key={mapKey} encodedPolyline={(requestedRide || preview)?.encodedPolyline} />
 </View>
+
+{/* Rating Modal */}
 {showRatingModal && rateeId && (
-<RatingModal
-  rideId={requestedRide?.rideId}
-  rateeId={rateeId}
-  visible={showRatingModal}
-  token={token}
-  onClose={() => setShowRatingModal(false)}
-  onSubmitted={handlePostRatingCleanup} // ✅ match the prop name
-/>
-
+  <RatingModal
+    rideId={requestedRide?.rideId}
+    rateeId={rateeId}
+    visible={showRatingModal}
+    token={token}
+    onClose={() => setShowRatingModal(false)}
+    onSubmitted={handlePostRatingCleanup}
+  />
 )}
-
     </View>
   );
 };
-
-import styles from '../../css/RiderDashboard.styles';
-
-
-
-
 
 export default RiderDashboard;
 
