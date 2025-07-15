@@ -11,6 +11,8 @@ import { io } from 'socket.io-client';
 import { useEffect } from 'react';
 import RatingModal from './RatingModal';
 import LocationAutocompleteInput from './LocationAutocompleteInput'; // at top if not already
+import DriverDetailsBox from './DriverDetailsBox';
+
 
 
 
@@ -374,6 +376,10 @@ Alert.alert('Coming Soon', 'This feature is not available yet.');
     <Text>🕒 Ride in progress...</Text>
   </View>
 )}
+{rideStatus && ['accepted', 'in_progress', 'completed'].includes(rideStatus) && requestedRide?.rideId && (
+  <DriverDetailsBox rideId={requestedRide.rideId} token={token} />
+)}
+
 
 {rideStatus === 'completed' && showRideSummary && (
   <View style={styles.statusBox}>
