@@ -19,7 +19,6 @@ import ModernHeader from './ui/ModernHeader';
 import ModernCard from './ui/ModernCard';
 import ModernButton from './ui/ModernButton';
 import StatusBadge from './ui/StatusBadge';
-import ErrorBoundary from './ui/ErrorBoundary';
 
 // Theme
 import { colors, typography } from '../theme';
@@ -538,19 +537,31 @@ const cancelRide = async () => {
 
 
   return (
-    <ErrorBoundary>
-      <View style={styles.container}>
-      {/* Modern Header with Connection Status */}
-      <ModernHeader
-        title="Belfast Rides"
-        subtitle="Your reliable ride partner"
-        onMenuPress={() => setMenuVisible(true)}
-        showConnectionStatus={true}
-        isConnected={isConnected}
-        isReconnecting={isReconnecting}
-      />
+    <View style={styles.container}>
+      {/* Map View - Full screen, fully interactable */}
+      <View style={styles.mapContainer}>
+        <MapScreen
+          key={mapKey}
+          encodedPolyline={preview?.encodedPolyline || requestedRide?.encodedPolyline}
+          driverLocation={driverLocation || undefined}
+        />
+      </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      {/* Header overlay */}
+      <View style={styles.headerOverlay}>
+        <ModernHeader
+          title="Belfast Rides"
+          subtitle="Your reliable ride partner"
+          onMenuPress={() => setMenuVisible(true)}
+          showConnectionStatus={true}
+          isConnected={isConnected}
+          isReconnecting={isReconnecting}
+        />
+      </View>
+
+      {/* Bottom Sheet Content */}
+      <View style={styles.bottomSheet}>
+        <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled={true}>
         {/* Ride Input Section */}
         {!requestedRide && !['accepted', 'in_progress', 'completed'].includes(rideStatus || '') && (
           <ModernCard style={styles.inputCard}>
@@ -643,6 +654,46 @@ const cancelRide = async () => {
           </ModernCard>
         )}
 
+        {/* Active Ride Info - Replace floating card with inline version */}
+        {requestedRide && rideStatus !== 'completed' && (
+          <ModernCard variant="elevated" style={styles.activeRideCard}>
+            <View style={styles.activeRideHeader}>
+              <Text style={styles.activeRideTitle}>Active Ride</Text>
+              <StatusBadge status={rideStatus as any} />
+            </View>
+            
+            <View style={styles.rideDetails}>
+              <View style={styles.detailRow}>
+                <MaterialIcons name="straighten" size={18} color={colors.text.secondary} />
+                <Text style={styles.detailTextSmall}>Distance: {requestedRide.distance}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <MaterialIcons name="schedule" size={18} color={colors.text.secondary} />
+                <Text style={styles.detailTextSmall}>Duration: {requestedRide.duration}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <MaterialIcons name="payment" size={18} color={colors.text.secondary} />
+                <Text style={styles.fareTextSmall}>Fare: {requestedRide.estimatedFare}</Text>
+              </View>
+            </View>
+
+            {rideStatus !== 'in_progress' && requestedRide.status !== 'in_progress' && requestedRide.status !== 'started' && (
+              <ModernButton
+                title="Cancel Ride"
+                onPress={() => {
+                  Alert.alert('Cancel Ride?', 'Are you sure?', [
+                    { text: 'No', style: 'cancel' },
+                    { text: 'Yes, Cancel', style: 'destructive', onPress: cancelRide },
+                  ]);
+                }}
+                variant="error"
+                size="sm"
+                fullWidth
+              />
+            )}
+          </ModernCard>
+        )}
+
         {/* Driver Details */}
         {rideStatus && ['accepted', 'in_progress'].includes(rideStatus) && requestedRide?.rideId && (
           <DriverDetailsBox 
@@ -688,62 +739,12 @@ const cancelRide = async () => {
           </ModernCard>
         )}
 
-        {/* Spacer for floating active ride card */}
-        {requestedRide && rideStatus !== 'completed' && (
-          <View style={{ height: 200 }} />
-        )}
-      </ScrollView>
-
-      {/* Active Ride Floating Card */}
-      {requestedRide && rideStatus !== 'completed' && (
-        <View style={styles.floatingCard}>
-          <ModernCard variant="elevated" style={styles.activeRideCard}>
-            <View style={styles.activeRideHeader}>
-              <Text style={styles.activeRideTitle}>Active Ride</Text>
-              <StatusBadge status={rideStatus as any} />
-            </View>
-            
-            <View style={styles.rideDetails}>
-              <View style={styles.detailRow}>
-                <MaterialIcons name="straighten" size={18} color={colors.text.secondary} />
-                <Text style={styles.detailTextSmall}>Distance: {requestedRide.distance}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <MaterialIcons name="schedule" size={18} color={colors.text.secondary} />
-                <Text style={styles.detailTextSmall}>Duration: {requestedRide.duration}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <MaterialIcons name="payment" size={18} color={colors.text.secondary} />
-                <Text style={styles.fareTextSmall}>Fare: {requestedRide.estimatedFare}</Text>
-              </View>
-            </View>
-
-            {rideStatus !== 'in_progress' && requestedRide.status !== 'in_progress' && requestedRide.status !== 'started' && (
-              <ModernButton
-                title="Cancel Ride"
-                onPress={() => {
-                  Alert.alert('Cancel Ride?', 'Are you sure?', [
-                    { text: 'No', style: 'cancel' },
-                    { text: 'Yes, Cancel', style: 'destructive', onPress: cancelRide },
-                  ]);
-                }}
-                variant="error"
-                size="sm"
-                fullWidth
-              />
-            )}
-          </ModernCard>
-        </View>
-      )}
-
-      {/* Map View - DISABLED FOR DEBUGGING */}
-      <View style={styles.mapContainer}>
-        <View style={{ flex: 1, backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16, color: '#666' }}>Map disabled for debugging</Text>
-        </View>
+        {/* Spacer for bottom padding */}
+        <View style={{ height: 20 }} />
+        </ScrollView>
       </View>
 
-{/* Rating Modal */}
+      {/* Rating Modal */}
 {showRatingModal && rateeId && (
   <RatingModal
     rideId={requestedRide?.rideId}
@@ -842,7 +843,6 @@ const cancelRide = async () => {
         </Pressable>
       </Modal>
     </View>
-    </ErrorBoundary>
   );
 };
 
@@ -854,10 +854,36 @@ const styles = {
     flex: 1,
     backgroundColor: colors.background,
   },
-  content: {
-    flex: 1,
-    padding: spacing[4],
+  mapContainer: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1, // Map layer is below content
+  },
+  headerOverlay: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 3, // Above everything
     backgroundColor: 'transparent',
+  },
+  bottomSheet: {
+    position: 'absolute' as const,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    maxHeight: '70%' as const,
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[4],
+    paddingBottom: spacing[8], // More bottom padding for safe area
+    zIndex: 2, // Above map but below header
+    ...shadows.lg,
   },
   inputCard: {
     marginBottom: spacing[4],
@@ -919,7 +945,7 @@ const styles = {
     flex: 1,
   },
   statusCard: {
-    marginBottom: spacing[4],
+    marginBottom: spacing[3],
   },
   statusHeader: {
     flexDirection: 'row' as const,
@@ -948,16 +974,8 @@ const styles = {
     color: colors.success[600],
     marginLeft: spacing[2],
   },
-  floatingCard: {
-    position: 'absolute' as const,
-    bottom: 80,
-    left: spacing[4],
-    right: spacing[4],
-    zIndex: 10,
-    ...shadows.md,
-  },
   activeRideCard: {
-    padding: spacing[4],
+    marginBottom: spacing[3],
   },
   activeRideHeader: {
     flexDirection: 'row' as const,
@@ -968,14 +986,6 @@ const styles = {
   activeRideTitle: {
     ...typography.styles.h4,
     color: colors.text.primary,
-  },
-  mapContainer: {
-    position: 'absolute' as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: -1,
   },
   // Navigation Menu Modal Styles
   menuModal: {

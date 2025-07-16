@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   TextInput,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
   Text,
   StyleSheet,
@@ -70,13 +70,14 @@ if (err instanceof Error) {
       />
 
       {showSuggestions && suggestions.length > 0 && (
-        <FlatList
-          data={suggestions}
-          keyExtractor={(item) => item.place_id}
+        <ScrollView
           style={styles.dropdown}
           keyboardShouldPersistTaps="handled"
-          renderItem={({ item }) => (
+          nestedScrollEnabled={true}
+        >
+          {suggestions.map((item) => (
             <TouchableOpacity
+              key={item.place_id}
               onPress={() => handleSelect(item.description)}
               style={styles.suggestion}
             >
@@ -84,8 +85,8 @@ if (err instanceof Error) {
                 {item.description}
               </Text>
             </TouchableOpacity>
-          )}
-        />
+          ))}
+        </ScrollView>
       )}
     </View>
   );
