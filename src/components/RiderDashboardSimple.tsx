@@ -19,22 +19,10 @@ import axios from 'axios';
 import { useRideStore } from '../store/useRideStore';
 import { useRoute, useFocusEffect, useNavigation } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import NetInfo from '@react-native-community/netinfo';
 import { io } from 'socket.io-client';
 import RatingModal from './RatingModal';
 import LocationAutocompleteInput from './LocationAutocompleteInput';
 import DriverDetailsBox from './DriverDetailsBox';
-import ChatScreen from './ChatScreen';
-
-// Modern UI Components
-import ModernHeader from './ui/ModernHeader';
-import ModernCard from './ui/ModernCard';
-import ModernButton from './ui/ModernButton';
-import StatusBadge from './ui/StatusBadge';
-
-// Theme
-import { colors, typography } from '../theme';
-import { spacing, borderRadius, shadows } from '../theme/layout';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -71,13 +59,6 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [rateeId, setRateeId] = useState<number | null>(null);
   const [showRideSummary, setShowRideSummary] = useState(false);
-  const [driverLocation, setDriverLocation] = useState<{latitude: number, longitude: number} | null>(null);
-  const [showChatModal, setShowChatModal] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
-  
-  // Connectivity state
-  const [isConnected, setIsConnected] = useState(true);
-  const [isReconnecting, setIsReconnecting] = useState(false);
 
   // Socket setup
   useEffect(() => {
@@ -86,7 +67,6 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
     try {
       const payload: any = JSON.parse(atob(token.split('.')[1]));
       const riderId = payload.id;
-      setCurrentUserId(riderId); // Set current user ID for chat
       if (riderId) {
         socket.emit('registerRider', riderId);
         console.log('📡 registerRider sent for', riderId);
@@ -115,35 +95,12 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
       setShowRideSummary(true);
     });
 
-    // Listen for driver location updates
-    socket.on('driverLocationUpdate', (location) => {
-      setDriverLocation(location);
-    });
-
     return () => {
       socket.off('driverAccepted');
       socket.off('rideStarted');
       socket.off('rideCompleted');
-      socket.off('driverLocationUpdate');
     };
   }, [token]);
-
-  // Network connectivity monitoring
-  useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener(state => {
-      const connected = state.isConnected ?? false;
-      setIsConnected(connected);
-      
-      if (!connected) {
-        Alert.alert('No Internet', 'Please check your connection.');
-      } else if (!isConnected && connected) {
-        setIsReconnecting(true);
-        setTimeout(() => setIsReconnecting(false), 2000);
-      }
-    });
-
-    return unsubscribe;
-  }, [isConnected]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -168,12 +125,6 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
       Alert.alert('Error', 'Please enter both pickup and destination.');
       return;
     }
-
-    if (!isConnected) {
-      Alert.alert('No Internet', 'Please check your connection and try again.');
-      return;
-    }
-
     setLoading(true);
     setPreview(null);
     try {
@@ -267,16 +218,6 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Belfast Rides</Text>
         
-        {/* Connection status */}
-        <View style={styles.connectionStatus}>
-          {!isConnected && (
-            <MaterialIcons name="signal-wifi-off" size={20} color="#e53e3e" />
-          )}
-          {isReconnecting && (
-            <MaterialIcons name="sync" size={20} color="#007bff" />
-          )}
-        </View>
-        
         {/* Quick status when mini */}
         {bottomSheetState === 'mini' && rideStatus && (
           <View style={styles.quickStatus}>
@@ -289,11 +230,7 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
 
       {/* Map - now gets most of the screen */}
       <View style={[styles.mapContainer, { height: screenHeight - getBottomSheetHeight() - 60 }]}>
-        <MapScreen 
-          key={mapKey} 
-          encodedPolyline={(requestedRide || preview)?.encodedPolyline}
-          driverLocation={driverLocation}
-        />
+        <MapScreen key={mapKey} encodedPolyline={(requestedRide || preview)?.encodedPolyline} />
       </View>
 
       {/* Bottom Sheet */}
@@ -381,11 +318,7 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
 
             {/* Driver Details */}
             {rideStatus && ['accepted', 'in_progress'].includes(rideStatus) && requestedRide?.rideId && (
-              <DriverDetailsBox 
-                rideId={requestedRide.rideId} 
-                token={token}
-                onChatPress={() => setShowChatModal(true)}
-              />
+              <DriverDetailsBox rideId={requestedRide.rideId} token={token} />
             )}
 
             {/* Active Ride Info */}
@@ -507,24 +440,6 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
           onSubmitted={handlePostRatingCleanup}
         />
       )}
-
-      {/* Chat Modal */}
-      {showChatModal && requestedRide?.rideId && currentUserId && (
-        <Modal
-          visible={showChatModal}
-          animationType="slide"
-          presentationStyle="pageSheet"
-          onRequestClose={() => setShowChatModal(false)}
-        >
-          <ChatScreen
-            rideId={requestedRide.rideId}
-            token={token}
-            currentUserId={currentUserId}
-            currentUserType="rider"
-            onClose={() => setShowChatModal(false)}
-          />
-        </Modal>
-      )}
     </View>
   );
 };
@@ -559,11 +474,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 12,
     color: '#333',
-  },
-  connectionStatus: {
-    paddingHorizontal: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   quickStatus: {
     paddingHorizontal: 8,
