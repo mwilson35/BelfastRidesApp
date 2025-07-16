@@ -9,6 +9,7 @@ type RideState = {
   setLocation: (data: { latitude: number; longitude: number } | null) => void;
   routeCoordinates: { latitude: number; longitude: number }[];
   setRouteCoordinates: (coords: { latitude: number; longitude: number }[]) => void;
+  clearAll: () => void;
 };
 
 export const useRideStore = create<RideState>((set) => ({
@@ -20,4 +21,5 @@ export const useRideStore = create<RideState>((set) => ({
   setLocation: (data) => set({ location: data }),
   routeCoordinates: [],
   setRouteCoordinates: (coords) => set({ routeCoordinates: coords }),
+  clearAll: () => set({ preview: null, requestedRide: null, location: null, routeCoordinates: [] }),
 }));

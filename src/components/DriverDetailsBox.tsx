@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, Image, StyleSheet, ActivityIndicator, TouchableOpacity, Alert, Linking } from 'react-native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
 
 interface Props {
   rideId: number;
   token: string;
+  onChatPress?: () => void;
 }
 
-const DriverDetailsBox: React.FC<Props> = ({ rideId, token }) => {
+const DriverDetailsBox: React.FC<Props> = ({ rideId, token, onChatPress }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [driverDetails, setDriverDetails] = useState<any>(null);
@@ -56,6 +58,7 @@ const DriverDetailsBox: React.FC<Props> = ({ rideId, token }) => {
     vehicle_description = 'Vehicle info missing',
     vehicle_reg = 'Registration unavailable',
     profilePicUrl,
+    phone_number,
   } = driverDetails || {};
 
   const {
@@ -69,6 +72,25 @@ const DriverDetailsBox: React.FC<Props> = ({ rideId, token }) => {
       ? `http://192.168.33.5:5000/${profilePicUrl}`
       : 'https://via.placeholder.com/64';
 
+  const handleCall = () => {
+    if (phone_number) {
+      const phoneUrl = `tel:${phone_number}`;
+      Linking.openURL(phoneUrl).catch(() => {
+        Alert.alert('Error', 'Unable to make phone call');
+      });
+    } else {
+      Alert.alert('No Phone Number', 'Driver phone number not available');
+    }
+  };
+
+  const handleChat = () => {
+    if (onChatPress) {
+      onChatPress();
+    } else {
+      Alert.alert('Chat', 'Chat feature coming soon!');
+    }
+  };
+
   return (
     <View style={styles.box}>
       <Text style={styles.title}>Your Driver</Text>
@@ -80,6 +102,19 @@ const DriverDetailsBox: React.FC<Props> = ({ rideId, token }) => {
           <Text style={styles.detail}>Plate: {vehicle_reg}</Text>
           <Text style={styles.rating}>⭐ {avgRating} ({totalRatings} ratings)</Text>
         </View>
+      </View>
+      
+      {/* Communication Buttons */}
+      <View style={styles.buttonRow}>
+        <TouchableOpacity style={styles.chatButton} onPress={handleChat}>
+          <MaterialIcons name="chat" size={20} color="#fff" />
+          <Text style={styles.buttonText}>Chat</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.callButton} onPress={handleCall}>
+          <MaterialIcons name="phone" size={20} color="#fff" />
+          <Text style={styles.buttonText}>Call</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -129,6 +164,36 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 14,
     color: '#666',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    marginTop: 16,
+    gap: 12,
+  },
+  chatButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#007bff',
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 6,
+  },
+  callButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#28a745',
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 6,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
 });
 
