@@ -77,6 +77,10 @@ setShowRideSummary(true); // 👈 This replaces the modal trigger
 
 });
 
+socket.on('driverLocationUpdate', (location) => {
+  console.log('📍 Driver location update:', location);
+  setDriverLocation(location);
+});
 
 
 
@@ -84,6 +88,7 @@ return () => {
   socket.off('driverAccepted');
   socket.off('rideStarted');
   socket.off('rideCompleted');
+  socket.off('driverLocationUpdate');
 };
 
   }, [token]);
@@ -96,6 +101,7 @@ return () => {
   setPreview(null);
   setPickupLocation('');
   setDestination('');
+  setDriverLocation(null); // clear driver location
   setMapKey(prev => prev + 1); // clear map route
 };
 
@@ -115,6 +121,7 @@ return () => {
   const [showRatingModal, setShowRatingModal] = useState(false);
 const [rateeId, setRateeId] = useState<number | null>(null);
 const [showRideSummary, setShowRideSummary] = useState(false);
+const [driverLocation, setDriverLocation] = useState<{latitude: number, longitude: number} | null>(null);
 
 
 
@@ -181,6 +188,7 @@ const cancelRide = async () => {
     setRequestedRide(null); // <-- CLEAR REQUESTED RIDE TOO
     setPickupLocation('');
     setDestination('');
+    setDriverLocation(null); // clear driver location
   };
 
   // ADDED HANDLE REQUEST RIDE FUNCTION CLEARLY:
@@ -199,6 +207,7 @@ const cancelRide = async () => {
       setRequestLoading(false);
     }
   };
+
 
   return (
     <View style={styles.container}>
@@ -296,7 +305,7 @@ const cancelRide = async () => {
       <Pressable
         onPress={() => {
           setMenuVisible(false);
-Alert.alert('Coming Soon', 'This feature is not available yet.');
+          Alert.alert('Coming Soon', 'This feature is not available yet.');
         }}
         style={{
           flexDirection: 'row',
@@ -428,7 +437,7 @@ Alert.alert('Coming Soon', 'This feature is not available yet.');
 
 {/* Map View */}
 <View style={{ flex: 1, marginTop: 8 }}>
-  <MapScreen key={mapKey} encodedPolyline={(requestedRide || preview)?.encodedPolyline} />
+  <MapScreen key={mapKey} encodedPolyline={(requestedRide || preview)?.encodedPolyline} driverLocation={driverLocation} />
 </View>
 
 {/* Rating Modal */}

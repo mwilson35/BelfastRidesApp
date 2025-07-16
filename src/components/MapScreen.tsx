@@ -9,6 +9,7 @@ import { useRideStore } from '../store/useRideStore';
 
 type Props = {
   encodedPolyline?: string;
+  driverLocation?: {latitude: number, longitude: number} | null;
 };
 
 const DEFAULT_REGION = {
@@ -18,7 +19,7 @@ const DEFAULT_REGION = {
   longitudeDelta: 0.015,
 };
 
-const MapScreen: React.FC<Props> = ({ encodedPolyline }) => {
+const MapScreen: React.FC<Props> = ({ encodedPolyline, driverLocation }) => {
   const mapRef = useRef<MapView>(null);
   const isFocused = useIsFocused();
 
@@ -140,6 +141,15 @@ const MapScreen: React.FC<Props> = ({ encodedPolyline }) => {
               pinColor="red"
             />
           </>
+        )}
+
+        {driverLocation && (
+          <Marker
+            coordinate={driverLocation}
+            title="Your Driver"
+            description="Driver's current location"
+            pinColor="orange"
+          />
         )}
       </MapView>
 
