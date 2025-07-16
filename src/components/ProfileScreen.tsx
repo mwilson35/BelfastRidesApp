@@ -37,6 +37,7 @@ const ProfileScreen = ({ token }: { token: string }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -66,6 +67,7 @@ const ProfileScreen = ({ token }: { token: string }) => {
   };
 
   const uploadPhoto = async (uri: string) => {
+    setUploadingPhoto(true);
     const formData = new FormData();
     formData.append('document', {
       uri,
@@ -76,6 +78,7 @@ const ProfileScreen = ({ token }: { token: string }) => {
     formData.append('documentType', 'profilePhoto');
 
     try {
+      console.log('Uploading photo to:', 'http://192.168.33.5:5000/api/documents/uploadDocument');
       const res = await axios.post(
         'http://192.168.33.5:5000/api/documents/uploadDocument',
         formData,
@@ -86,11 +89,21 @@ const ProfileScreen = ({ token }: { token: string }) => {
           },
         }
       );
+      console.log('Upload successful:', res.data);
       setProfile((prev) =>
         prev ? { ...prev, profilePicUrl: res.data.profilePicUrl } : prev
       );
-    } catch (err) {
+      Alert.alert('Success', 'Profile picture updated successfully!');
+    } catch (err: any) {
       console.error('Upload failed:', err);
+      console.error('Error response:', err.response?.data);
+      console.error('Error status:', err.response?.status);
+      console.error('Error message:', err.message);
+      
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to upload profile picture';
+      Alert.alert('Upload Failed', errorMessage);
+    } finally {
+      setUploadingPhoto(false);
     }
   };
 
@@ -167,12 +180,18 @@ const ProfileScreen = ({ token }: { token: string }) => {
                 <MaterialIcons name="person" size={60} color={colors.text.tertiary} />
               </View>
             )}
+            {uploadingPhoto && (
+              <View style={styles.uploadingOverlay}>
+                <ActivityIndicator size="large" color={colors.primary[500]} />
+              </View>
+            )}
             <ModernButton
-              title="Change Photo"
+              title={uploadingPhoto ? "Uploading..." : "Change Photo"}
               onPress={handlePickPhoto}
               variant="outline"
               size="sm"
               style={styles.photoButton}
+              disabled={uploadingPhoto}
             />
           </View>
         </ModernCard>
@@ -326,6 +345,18 @@ const styles = {
     marginBottom: spacing[4],
     borderWidth: 3,
     borderColor: colors.gray[200],
+  },
+  uploadingOverlay: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    borderRadius: 60,
+    marginBottom: spacing[4],
   },
   photoButton: {
     marginTop: spacing[2],
