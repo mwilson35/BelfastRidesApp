@@ -139,6 +139,13 @@ const cancelRide = async () => {
       ]);
       return;
     }
+    // Handle business rule violations (ride already started)
+    if (err.response?.status === 400) {
+      Alert.alert('Cannot Cancel', err.response?.data?.message || 'This ride cannot be cancelled as it has already started.');
+      // Refresh ride status to sync with backend
+      setRideStatus('in_progress');
+      return;
+    }
     if (!isConnected) {
       Alert.alert('Connection Lost', 'Please check your internet connection and try again.');
     } else {
@@ -222,8 +229,19 @@ const cancelRide = async () => {
       const riderId = payload.id;
       if (riderId) {
         setCurrentUserId(riderId);
+        
+        // Ensure socket is connected before registering
+        if (!socket.connected) {
+          socket.connect();
+        }
+        
         socket.emit('registerRider', riderId);
-        console.log('📡 registerRider sent for', riderId);
+        console.log('📡 registerRider sent for rider ID:', riderId);
+        
+        // Add a small delay to ensure socket registration, then fetch current ride
+        setTimeout(() => {
+          fetchCurrentRideStatus();
+        }, 1000);
       }
     } catch (err) {
       console.error('Token decode failed:', err);
@@ -254,13 +272,100 @@ const cancelRide = async () => {
       setDriverLocation(location);
     });
 
+    // Add socket connection event listeners for debugging
+    socket.on('connect', () => {
+      console.log('🔌 Socket connected, ID:', socket.id);
+      const payload: any = JSON.parse(atob(token.split('.')[1]));
+      const riderId = payload.id;
+      if (riderId) {
+        socket.emit('registerRider', riderId);
+        console.log('🔄 Re-registered rider after reconnection:', riderId);
+      }
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.log('🔌 Socket disconnected:', reason);
+    });
+
     return () => {
       socket.off('driverAccepted');
       socket.off('rideStarted');
       socket.off('rideCompleted');
       socket.off('driverLocationUpdate');
+      socket.off('connect');
+      socket.off('disconnect');
     };
   }, [token]);
+
+  // Fetch current ride status from backend
+  const fetchCurrentRideStatus = async () => {
+    if (!isConnected) {
+      console.log('⚠️ Skipping ride status fetch - offline');
+      return;
+    }
+    
+    console.log('🔍 Fetching current ride status from backend...');
+    
+    try {
+      const response = await axios.get('http://192.168.33.5:5000/api/rides/current', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.ride) {
+        const currentRide = response.data.ride;
+        console.log('🎯 Found active ride from backend:', currentRide);
+        
+        setRequestedRide({
+          rideId: currentRide.id || currentRide.rideId,
+          distance: currentRide.distance,
+          duration: currentRide.duration,
+          estimatedFare: currentRide.estimatedFare || currentRide.estimated_fare,
+          encodedPolyline: currentRide.encodedPolyline || currentRide.encoded_polyline,
+          status: currentRide.status
+        });
+        
+        // Map backend status to frontend status
+        switch (currentRide.status) {
+          case 'requested':
+            setRideStatus('requested');
+            console.log('🔄 Synced status: requested');
+            break;
+          case 'accepted':
+            setRideStatus('accepted');
+            console.log('🔄 Synced status: accepted');
+            // Show driver accepted notification since user missed it
+            Alert.alert('Driver Found!', 'A driver has accepted your ride.');
+            break;
+          case 'in_progress':
+          case 'started':
+            setRideStatus('in_progress');
+            console.log('🔄 Synced status: in_progress');
+            Alert.alert('Ride in Progress', 'Your ride is currently in progress.');
+            break;
+          case 'completed':
+            setRideStatus('completed');
+            setRateeId(currentRide.driverId || currentRide.driver_id);
+            setShowRideSummary(true);
+            console.log('🔄 Synced status: completed');
+            break;
+          default:
+            setRideStatus(null);
+            console.log('🔄 Synced status: unknown -', currentRide.status);
+        }
+        
+        console.log('✅ Successfully synced ride status from backend:', currentRide.status);
+      } else {
+        console.log('ℹ️ No active ride found in backend');
+      }
+    } catch (err: any) {
+      // No active ride or error - this is fine for 404
+      if (err.response?.status === 404) {
+        console.log('ℹ️ No active ride (404) - this is normal');
+      } else {
+        console.error('❌ Failed to fetch current ride status:', err.response?.status, err.message);
+      }
+    }
+  };
 
   // Token validation helper
   const isTokenExpired = (token: string): boolean => {
@@ -341,6 +446,10 @@ const cancelRide = async () => {
           console.log('🌐 Internet connection restored');
           Alert.alert('Connection Restored', 'You are back online!');
           reconnectSocket();
+          // Fetch current ride status when back online
+          setTimeout(() => {
+            fetchCurrentRideStatus();
+          }, 1500);
         } else {
           console.log('📵 Internet connection lost');
           Alert.alert(
@@ -622,7 +731,8 @@ const cancelRide = async () => {
     <Text>Distance: {requestedRide.distance}</Text>
     <Text>Duration: {requestedRide.duration}</Text>
     <Text>Fare: {requestedRide.estimatedFare}</Text>
-    {rideStatus !== 'in_progress' && (
+    {/* Only show cancel if ride hasn't started (backend will enforce this too) */}
+    {rideStatus !== 'in_progress' && requestedRide.status !== 'in_progress' && requestedRide.status !== 'started' && (
       <Button
         title="Cancel Ride"
         color="#f33"
