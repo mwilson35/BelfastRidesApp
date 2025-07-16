@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, Keyboard, ActivityIndicator, Alert, Modal } from 'react-native';
+import { View, Text, Keyboard, ActivityIndicator, Alert, Modal, ScrollView } from 'react-native';
 import { TouchableOpacity, Pressable } from 'react-native';
 import { useRoute, useFocusEffect, useNavigation } from '@react-navigation/native';
 import { io } from 'socket.io-client';
@@ -13,21 +13,22 @@ import RatingModal from './RatingModal';
 import LocationAutocompleteInput from './LocationAutocompleteInput';
 import DriverDetailsBox from './DriverDetailsBox';
 import ChatScreen from './ChatScreen';
-import styles from '../../css/RiderDashboard.styles';
 
+// Modern UI Components
+import ModernHeader from './ui/ModernHeader';
+import ModernCard from './ui/ModernCard';
+import ModernButton from './ui/ModernButton';
+import StatusBadge from './ui/StatusBadge';
+import ErrorBoundary from './ui/ErrorBoundary';
 
-
-
-
-
-
-
+// Theme
+import { colors, typography } from '../theme';
+import { spacing, borderRadius, shadows } from '../theme/layout';
 
 type Props = {
   logout: () => void;
   token: string;
 };
-
 
 const socket = io('http://192.168.33.5:5000');
 
@@ -63,15 +64,11 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
   const route = useRoute();
   const { preview, setPreview, requestedRide, setRequestedRide, clearAll } = useRideStore();
 
-
-
-
   useFocusEffect(
     React.useCallback(() => {
       setMapKey((prev) => prev + 1);
     }, [])
   );
-
 
   const handlePreviewRide = async () => {
     Keyboard.dismiss();
@@ -109,7 +106,6 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
       setLoading(false);
     }
   };
-
 
 const cancelRide = async () => {
   if (!requestedRide?.rideId) {
@@ -230,18 +226,32 @@ const cancelRide = async () => {
       if (riderId) {
         setCurrentUserId(riderId);
         
-        // Ensure socket is connected before registering
-        if (!socket.connected) {
-          socket.connect();
-        }
-        
-        socket.emit('registerRider', riderId);
-        console.log('📡 registerRider sent for rider ID:', riderId);
-        
-        // Add a small delay to ensure socket registration, then fetch current ride
-        setTimeout(() => {
-          fetchCurrentRideStatus();
-        }, 1000);
+        // Delay socket connection to prevent immediate crashes
+        const connectSocket = () => {
+          try {
+            // Ensure socket is connected before registering
+            if (!socket.connected) {
+              socket.connect();
+            }
+            
+            socket.emit('registerRider', riderId);
+            console.log('📡 registerRider sent for rider ID:', riderId);
+            
+            // Add a delay before fetching current ride status
+            setTimeout(() => {
+              try {
+                fetchCurrentRideStatus();
+              } catch (fetchError) {
+                console.warn('Failed to fetch ride status:', fetchError);
+              }
+            }, 2000);
+          } catch (socketError) {
+            console.warn('Socket connection failed:', socketError);
+          }
+        };
+
+        // Delay the entire socket setup
+        setTimeout(connectSocket, 1000);
       }
     } catch (err) {
       console.error('Token decode failed:', err);
@@ -299,61 +309,70 @@ const cancelRide = async () => {
 
   // Fetch current ride status from backend
   const fetchCurrentRideStatus = async () => {
-    if (!isConnected) {
-      console.log('⚠️ Skipping ride status fetch - offline');
-      return;
-    }
-    
-    console.log('🔍 Fetching current ride status from backend...');
-    
     try {
+      if (!isConnected) {
+        console.log('⚠️ Skipping ride status fetch - offline');
+        return;
+      }
+      
+      console.log('🔍 Fetching current ride status from backend...');
+      
       const response = await axios.get('http://192.168.33.5:5000/api/rides/current', {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 10000, // 10 second timeout
       });
       
       if (response.data.ride) {
         const currentRide = response.data.ride;
         console.log('🎯 Found active ride from backend:', currentRide);
         
-        setRequestedRide({
-          rideId: currentRide.id || currentRide.rideId,
-          distance: currentRide.distance,
-          duration: currentRide.duration,
-          estimatedFare: currentRide.estimatedFare || currentRide.estimated_fare,
-          encodedPolyline: currentRide.encodedPolyline || currentRide.encoded_polyline,
-          status: currentRide.status
-        });
-        
-        // Map backend status to frontend status
-        switch (currentRide.status) {
-          case 'requested':
-            setRideStatus('requested');
-            console.log('🔄 Synced status: requested');
-            break;
-          case 'accepted':
-            setRideStatus('accepted');
-            console.log('🔄 Synced status: accepted');
-            // Show driver accepted notification since user missed it
-            Alert.alert('Driver Found!', 'A driver has accepted your ride.');
-            break;
-          case 'in_progress':
-          case 'started':
-            setRideStatus('in_progress');
-            console.log('🔄 Synced status: in_progress');
-            Alert.alert('Ride in Progress', 'Your ride is currently in progress.');
-            break;
-          case 'completed':
-            setRideStatus('completed');
-            setRateeId(currentRide.driverId || currentRide.driver_id);
-            setShowRideSummary(true);
-            console.log('🔄 Synced status: completed');
-            break;
-          default:
-            setRideStatus(null);
-            console.log('🔄 Synced status: unknown -', currentRide.status);
+        try {
+          setRequestedRide({
+            rideId: currentRide.id || currentRide.rideId,
+            distance: currentRide.distance,
+            duration: currentRide.duration,
+            estimatedFare: currentRide.estimatedFare || currentRide.estimated_fare,
+            encodedPolyline: currentRide.encodedPolyline || currentRide.encoded_polyline,
+            status: currentRide.status
+          });
+          
+          // Map backend status to frontend status
+          switch (currentRide.status) {
+            case 'requested':
+              setRideStatus('requested');
+              console.log('🔄 Synced status: requested');
+              break;
+            case 'accepted':
+              setRideStatus('accepted');
+              console.log('🔄 Synced status: accepted');
+              // Show driver accepted notification since user missed it
+              setTimeout(() => {
+                Alert.alert('Driver Found!', 'A driver has accepted your ride.');
+              }, 1000);
+              break;
+            case 'in_progress':
+            case 'started':
+              setRideStatus('in_progress');
+              console.log('🔄 Synced status: in_progress');
+              setTimeout(() => {
+                Alert.alert('Ride in Progress', 'Your ride is currently in progress.');
+              }, 1000);
+              break;
+            case 'completed':
+              setRideStatus('completed');
+              setRateeId(currentRide.driverId || currentRide.driver_id);
+              setShowRideSummary(true);
+              console.log('🔄 Synced status: completed');
+              break;
+            default:
+              setRideStatus(null);
+              console.log('🔄 Synced status: unknown -', currentRide.status);
+          }
+          
+          console.log('✅ Successfully synced ride status from backend:', currentRide.status);
+        } catch (stateError) {
+          console.error('Failed to update ride state:', stateError);
         }
-        
-        console.log('✅ Successfully synced ride status from backend:', currentRide.status);
       } else {
         console.log('ℹ️ No active ride found in backend');
       }
@@ -361,6 +380,8 @@ const cancelRide = async () => {
       // No active ride or error - this is fine for 404
       if (err.response?.status === 404) {
         console.log('ℹ️ No active ride (404) - this is normal');
+      } else if (err.code === 'ECONNABORTED') {
+        console.log('⏰ Request timeout - will retry later');
       } else {
         console.error('❌ Failed to fetch current ride status:', err.response?.status, err.message);
       }
@@ -436,32 +457,58 @@ const cancelRide = async () => {
 
   // Network connectivity monitoring
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener(state => {
-      const connected = !!(state.isConnected && state.isInternetReachable);
-      
-      if (connected !== isConnected) {
-        setIsConnected(connected);
-        
-        if (connected) {
-          console.log('🌐 Internet connection restored');
-          Alert.alert('Connection Restored', 'You are back online!');
-          reconnectSocket();
-          // Fetch current ride status when back online
-          setTimeout(() => {
-            fetchCurrentRideStatus();
-          }, 1500);
-        } else {
-          console.log('📵 Internet connection lost');
-          Alert.alert(
-            'Connection Lost', 
-            'You are offline. The app will continue to work with limited functionality.',
-            [{ text: 'OK' }]
-          );
+    let unsubscribe: (() => void) | null = null;
+    
+    try {
+      unsubscribe = NetInfo.addEventListener(state => {
+        try {
+          const connected = !!(state.isConnected && state.isInternetReachable);
+          
+          if (connected !== isConnected) {
+            setIsConnected(connected);
+            
+            if (connected) {
+              console.log('🌐 Internet connection restored');
+              setTimeout(() => {
+                Alert.alert('Connection Restored', 'You are back online!');
+                reconnectSocket();
+                // Fetch current ride status when back online
+                setTimeout(() => {
+                  try {
+                    fetchCurrentRideStatus();
+                  } catch (fetchError) {
+                    console.warn('Failed to fetch ride status after reconnection:', fetchError);
+                  }
+                }, 1500);
+              }, 500);
+            } else {
+              console.log('📵 Internet connection lost');
+              setTimeout(() => {
+                Alert.alert(
+                  'Connection Lost', 
+                  'You are offline. The app will continue to work with limited functionality.',
+                  [{ text: 'OK' }]
+                );
+              }, 500);
+            }
+          }
+        } catch (stateError) {
+          console.warn('NetInfo state handling error:', stateError);
         }
-      }
-    });
+      });
+    } catch (netInfoError) {
+      console.warn('NetInfo setup failed:', netInfoError);
+    }
 
-    return () => unsubscribe();
+    return () => {
+      try {
+        if (unsubscribe) {
+          unsubscribe();
+        }
+      } catch (cleanupError) {
+        console.warn('NetInfo cleanup error:', cleanupError);
+      }
+    };
   }, [isConnected]);
 
   // Load state on component mount
@@ -491,266 +538,210 @@ const cancelRide = async () => {
 
 
   return (
-    <View style={styles.container}>
-      {/* Offline indicator */}
-      {!isConnected && (
-        <View style={{
-          backgroundColor: '#ff6b6b',
-          padding: 8,
-          alignItems: 'center',
-        }}>
-          <Text style={{ color: 'white', fontSize: 14, fontWeight: 'bold' }}>
-            📵 You are offline
-          </Text>
-        </View>
-      )}
-
-      {/* Reconnecting indicator */}
-      {isReconnecting && (
-        <View style={{
-          backgroundColor: '#ffa500',
-          padding: 8,
-          alignItems: 'center',
-        }}>
-          <Text style={{ color: 'white', fontSize: 14, fontWeight: 'bold' }}>
-            🔄 Reconnecting...
-          </Text>
-        </View>
-      )}
-
-<View style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }}>
-  <TouchableOpacity onPress={() => setMenuVisible(true)}>
-    <MaterialIcons name="menu" size={32} color="#333" />
-  </TouchableOpacity>
-</View>
-
-<Modal
-  visible={menuVisible}
-  transparent
-  animationType="fade"
-  onRequestClose={() => setMenuVisible(false)}
->
-  <Pressable
-    style={{
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.15)',
-    }}
-    onPress={() => setMenuVisible(false)}
-  >
-    <View
-      style={{
-        position: 'absolute',
-        top: 55,
-        left: 20,
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        elevation: 4,
-        minWidth: 180,
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 6,
-      }}
-    >
-      {/* 👤 Profile */}
-      <Pressable
-        onPress={() => {
-          setMenuVisible(false);
-          navigation.navigate('Profile' as never);
-        }}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingVertical: 8,
-        }}
-      >
-        <MaterialIcons name="person" size={22} color="#333" />
-        <Text style={{ marginLeft: 10, fontSize: 16, color: '#333' }}>
-          Profile
-        </Text>
-      </Pressable>
-
-      {/* 🕓 Ride History */}
-      <Pressable
-        onPress={() => {
-          setMenuVisible(false);
-          navigation.navigate('RideHistory' as never);
-        }}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingVertical: 8,
-        }}
-      >
-        <MaterialIcons name="history" size={22} color="#333" />
-        <Text style={{ marginLeft: 10, fontSize: 16, color: '#333' }}>
-          Ride History
-        </Text>
-      </Pressable>
-
-      <Pressable
-  onPress={() => {
-    setMenuVisible(false);
-    navigation.navigate('MyScheduledRides' as never);
-  }}
-  style={{
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-  }}
->
-  <MaterialIcons name="event-note" size={22} color="#333" />
-  <Text style={{ marginLeft: 10, fontSize: 16, color: '#333' }}>
-    My Scheduled Rides
-  </Text>
-</Pressable>
-
-
-      {/* ✨ Fake Refer Option (for future) */}
-      <Pressable
-        onPress={() => {
-          setMenuVisible(false);
-          Alert.alert('Coming Soon', 'This feature is not available yet.');
-        }}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingVertical: 8,
-        }}
-      >
-        <MaterialIcons name="star-outline" size={22} color="#aaa" />
-        <Text style={{ marginLeft: 10, fontSize: 16, color: '#aaa' }}>
-          Refer a Friend
-        </Text>
-      </Pressable>
-
-      {/* 🔚 Logout */}
-      <Pressable
-        onPress={() => {
-          setMenuVisible(false);
-          handleLogout();
-        }}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingVertical: 8,
-          marginTop: 8,
-        }}
-      >
-        <MaterialIcons name="logout" size={22} color="#e53e3e" />
-        <Text style={{ marginLeft: 10, fontSize: 16, color: '#e53e3e' }}>
-          Logout
-        </Text>
-      </Pressable>
-    </View>
-  </Pressable>
-</Modal>
-
-
-{/* Inputs shown only before ride request */}
-{!requestedRide && !['accepted', 'in_progress', 'completed'].includes(rideStatus || '') && (
-  <View style={styles.inputBox}>
-    <LocationAutocompleteInput
-      label="Pickup location"
-      value={pickupLocation}
-      onChange={setPickupLocation}
-    />
-    <LocationAutocompleteInput
-      label="Destination"
-      value={destination}
-      onChange={setDestination}
-    />
-    <View style={styles.buttonRow}>
-      <Button title="Preview Ride" onPress={handlePreviewRide} />
-      {preview && (
-        <Button title="Clear Preview" onPress={handleClearPreview} color="#f77" />
-      )}
-    </View>
-  </View>
-)}
-
-{loading && <ActivityIndicator style={{ margin: 12 }} />}
-
-{/* Ride preview details */}
-{preview && !requestedRide && (
-  <View style={styles.previewBox}>
-    <Text style={styles.previewTitle}>Ride Preview</Text>
-    <Text>Distance: {preview.distance}</Text>
-    <Text>Duration: {preview.duration}</Text>
-    <Text>Fare: {preview.estimatedFare}</Text>
-    <Button title="Request Ride" onPress={handleRequestRide} disabled={requestLoading} />
-    {requestLoading && <ActivityIndicator style={{ marginTop: 8 }} />}
-  </View>
-)}
-
-{/* Ride Status Messages */}
-{rideStatus === 'accepted' && (
-  <View style={styles.statusBox}>
-    <Text>🚗 Driver en route...</Text>
-  </View>
-)}
-
-{rideStatus === 'in_progress' && (
-  <View style={styles.statusBox}>
-    <Text>🕒 Ride in progress...</Text>
-  </View>
-)}
-
-{/* Driver Details */}
-{rideStatus && ['accepted', 'in_progress'].includes(rideStatus) && requestedRide?.rideId && (
-  <DriverDetailsBox 
-    rideId={requestedRide.rideId} 
-    token={token} 
-    onChatPress={handleChatPress}
-  />
-)}
-
-{/* Completed Ride Summary */}
-{rideStatus === 'completed' && showRideSummary && (
-  <View style={styles.statusBox}>
-    <Text style={{ fontWeight: 'bold', fontSize: 16 }}>✅ Ride Completed!</Text>
-    <Text>Distance: {requestedRide?.distance}</Text>
-    <Text>Duration: {requestedRide?.duration}</Text>
-    <Text>Fare: £{requestedRide?.estimatedFare}</Text>
-    <Button
-      title="OK"
-      onPress={() => {
-        setShowRideSummary(false);
-        setShowRatingModal(true);
-      }}
-    />
-  </View>
-)}
-
-{/* Active Ride Box */}
-{requestedRide && rideStatus !== 'completed' && (
-  <View style={[styles.previewBox, { position: 'absolute', bottom: 0, width: '100%', zIndex: 5 }]}>
-    <Text style={styles.previewTitle}>Ride Requested Successfully!</Text>
-    <Text>Distance: {requestedRide.distance}</Text>
-    <Text>Duration: {requestedRide.duration}</Text>
-    <Text>Fare: {requestedRide.estimatedFare}</Text>
-    {/* Only show cancel if ride hasn't started (backend will enforce this too) */}
-    {rideStatus !== 'in_progress' && requestedRide.status !== 'in_progress' && requestedRide.status !== 'started' && (
-      <Button
-        title="Cancel Ride"
-        color="#f33"
-        onPress={() => {
-          Alert.alert('Cancel Ride?', 'Are you sure?', [
-            { text: 'No', style: 'cancel' },
-            { text: 'Yes, Cancel', style: 'destructive', onPress: cancelRide },
-          ]);
-        }}
+    <ErrorBoundary>
+      <View style={styles.container}>
+      {/* Modern Header with Connection Status */}
+      <ModernHeader
+        title="Belfast Rides"
+        subtitle="Your reliable ride partner"
+        onMenuPress={() => setMenuVisible(true)}
+        showConnectionStatus={true}
+        isConnected={isConnected}
+        isReconnecting={isReconnecting}
       />
-    )}
-  </View>
-)}
 
-{/* Map View */}
-<View style={{ flex: 1, marginTop: 8 }}>
-  <MapScreen key={mapKey} encodedPolyline={(requestedRide || preview)?.encodedPolyline} driverLocation={driverLocation} />
-</View>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Ride Input Section */}
+        {!requestedRide && !['accepted', 'in_progress', 'completed'].includes(rideStatus || '') && (
+          <ModernCard style={styles.inputCard}>
+            <Text style={styles.sectionTitle}>Where to?</Text>
+            <LocationAutocompleteInput
+              label="Pickup location"
+              value={pickupLocation}
+              onChange={setPickupLocation}
+            />
+            <View style={{ marginTop: spacing[3] }}>
+              <LocationAutocompleteInput
+                label="Destination"
+                value={destination}
+                onChange={setDestination}
+              />
+            </View>
+            
+            <View style={styles.buttonRow}>
+              <ModernButton
+                title="Preview Ride"
+                onPress={handlePreviewRide}
+                loading={loading}
+                fullWidth
+                size="lg"
+              />
+              {preview && (
+                <ModernButton
+                  title="Clear"
+                  onPress={handleClearPreview}
+                  variant="outline"
+                  style={{ marginTop: spacing[2] }}
+                />
+              )}
+            </View>
+          </ModernCard>
+        )}
+
+        {/* Ride Preview */}
+        {preview && !requestedRide && (
+          <ModernCard variant="elevated" style={styles.previewCard}>
+            <View style={styles.previewHeader}>
+              <Text style={styles.previewTitle}>Ride Preview</Text>
+              <StatusBadge status="requested" text="Ready to Book" />
+            </View>
+            
+            <View style={styles.rideDetails}>
+              <View style={styles.detailRow}>
+                <MaterialIcons name="straighten" size={20} color={colors.text.secondary} />
+                <Text style={styles.detailText}>Distance: {preview.distance}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <MaterialIcons name="schedule" size={20} color={colors.text.secondary} />
+                <Text style={styles.detailText}>Duration: {preview.duration}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <MaterialIcons name="payment" size={20} color={colors.text.secondary} />
+                <Text style={styles.fareText}>Fare: {preview.estimatedFare}</Text>
+              </View>
+            </View>
+
+            <ModernButton
+              title="Request Ride"
+              onPress={handleRequestRide}
+              loading={requestLoading}
+              variant="success"
+              size="lg"
+              fullWidth
+            />
+          </ModernCard>
+        )}
+
+        {/* Ride Status Cards */}
+        {rideStatus === 'accepted' && (
+          <ModernCard variant="elevated" style={styles.statusCard}>
+            <View style={styles.statusHeader}>
+              <StatusBadge status="accepted" />
+              <Text style={styles.statusTitle}>Driver Found!</Text>
+            </View>
+            <Text style={styles.statusSubtitle}>Your driver is on the way</Text>
+          </ModernCard>
+        )}
+
+        {rideStatus === 'in_progress' && (
+          <ModernCard variant="elevated" style={styles.statusCard}>
+            <View style={styles.statusHeader}>
+              <StatusBadge status="in_progress" />
+              <Text style={styles.statusTitle}>Ride in Progress</Text>
+            </View>
+            <Text style={styles.statusSubtitle}>Enjoy your journey</Text>
+          </ModernCard>
+        )}
+
+        {/* Driver Details */}
+        {rideStatus && ['accepted', 'in_progress'].includes(rideStatus) && requestedRide?.rideId && (
+          <DriverDetailsBox 
+            rideId={requestedRide.rideId} 
+            token={token} 
+            onChatPress={handleChatPress}
+          />
+        )}
+
+        {/* Completed Ride Summary */}
+        {rideStatus === 'completed' && showRideSummary && (
+          <ModernCard variant="elevated" style={styles.completedCard}>
+            <View style={styles.completedHeader}>
+              <StatusBadge status="completed" />
+              <Text style={styles.completedTitle}>Trip Completed!</Text>
+            </View>
+            
+            <View style={styles.rideDetails}>
+              <View style={styles.detailRow}>
+                <MaterialIcons name="straighten" size={20} color={colors.text.secondary} />
+                <Text style={styles.detailText}>Distance: {requestedRide?.distance}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <MaterialIcons name="schedule" size={20} color={colors.text.secondary} />
+                <Text style={styles.detailText}>Duration: {requestedRide?.duration}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <MaterialIcons name="payment" size={20} color={colors.text.secondary} />
+                <Text style={styles.fareText}>Total: £{requestedRide?.estimatedFare}</Text>
+              </View>
+            </View>
+
+            <ModernButton
+              title="Rate Your Trip"
+              onPress={() => {
+                setShowRideSummary(false);
+                setShowRatingModal(true);
+              }}
+              variant="primary"
+              size="lg"
+              fullWidth
+            />
+          </ModernCard>
+        )}
+
+        {/* Spacer for floating active ride card */}
+        {requestedRide && rideStatus !== 'completed' && (
+          <View style={{ height: 200 }} />
+        )}
+      </ScrollView>
+
+      {/* Active Ride Floating Card */}
+      {requestedRide && rideStatus !== 'completed' && (
+        <View style={styles.floatingCard}>
+          <ModernCard variant="elevated" style={styles.activeRideCard}>
+            <View style={styles.activeRideHeader}>
+              <Text style={styles.activeRideTitle}>Active Ride</Text>
+              <StatusBadge status={rideStatus as any} />
+            </View>
+            
+            <View style={styles.rideDetails}>
+              <View style={styles.detailRow}>
+                <MaterialIcons name="straighten" size={18} color={colors.text.secondary} />
+                <Text style={styles.detailTextSmall}>Distance: {requestedRide.distance}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <MaterialIcons name="schedule" size={18} color={colors.text.secondary} />
+                <Text style={styles.detailTextSmall}>Duration: {requestedRide.duration}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <MaterialIcons name="payment" size={18} color={colors.text.secondary} />
+                <Text style={styles.fareTextSmall}>Fare: {requestedRide.estimatedFare}</Text>
+              </View>
+            </View>
+
+            {rideStatus !== 'in_progress' && requestedRide.status !== 'in_progress' && requestedRide.status !== 'started' && (
+              <ModernButton
+                title="Cancel Ride"
+                onPress={() => {
+                  Alert.alert('Cancel Ride?', 'Are you sure?', [
+                    { text: 'No', style: 'cancel' },
+                    { text: 'Yes, Cancel', style: 'destructive', onPress: cancelRide },
+                  ]);
+                }}
+                variant="error"
+                size="sm"
+                fullWidth
+              />
+            )}
+          </ModernCard>
+        </View>
+      )}
+
+      {/* Map View - DISABLED FOR DEBUGGING */}
+      <View style={styles.mapContainer}>
+        <View style={{ flex: 1, backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ fontSize: 16, color: '#666' }}>Map disabled for debugging</Text>
+        </View>
+      </View>
 
 {/* Rating Modal */}
 {showRatingModal && rateeId && (
@@ -781,10 +772,255 @@ const cancelRide = async () => {
     />
   </Modal>
 )}
+
+{/* Navigation Menu Modal */}
+      <Modal
+        visible={menuVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <Pressable style={styles.menuModal} onPress={() => setMenuVisible(false)}>
+          <Pressable style={styles.menuContainer} onPress={() => {}}>
+            <Text style={styles.menuTitle}>Menu</Text>
+            
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => {
+                setMenuVisible(false);
+                navigation.navigate('RideHistory' as never);
+              }}
+            >
+              <MaterialIcons name="history" size={24} color={colors.text.secondary} />
+              <Text style={styles.menuItemText}>Ride History</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => {
+                setMenuVisible(false);
+                navigation.navigate('MyScheduledRides' as never);
+              }}
+            >
+              <MaterialIcons name="schedule" size={24} color={colors.text.secondary} />
+              <Text style={styles.menuItemText}>Scheduled Rides</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => {
+                setMenuVisible(false);
+                navigation.navigate('Profile' as never);
+              }}
+            >
+              <MaterialIcons name="person" size={24} color={colors.text.secondary} />
+              <Text style={styles.menuItemText}>Profile</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.menuItem, styles.logoutItem]}
+              onPress={() => {
+                setMenuVisible(false);
+                Alert.alert('Logout', 'Are you sure you want to logout?', [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Logout', style: 'destructive', onPress: handleLogout },
+                ]);
+              }}
+            >
+              <MaterialIcons name="logout" size={24} color={colors.error[600]} />
+              <Text style={[styles.menuItemText, styles.logoutText]}>Logout</Text>
+            </TouchableOpacity>
+
+            <ModernButton
+              title="Close"
+              onPress={() => setMenuVisible(false)}
+              variant="outline"
+              size="sm"
+              style={{ marginTop: spacing[4] }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
+    </ErrorBoundary>
   );
 };
 
 export default RiderDashboard;
+
+// Modern Styles using the design system
+const styles = {
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  content: {
+    flex: 1,
+    padding: spacing[4],
+    backgroundColor: 'transparent',
+  },
+  inputCard: {
+    marginBottom: spacing[4],
+  },
+  sectionTitle: {
+    ...typography.styles.h3,
+    color: colors.text.primary,
+    marginBottom: spacing[3],
+  },
+  buttonRow: {
+    marginTop: spacing[4],
+  },
+  previewCard: {
+    marginBottom: spacing[4],
+  },
+  previewHeader: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+    marginBottom: spacing[3],
+  },
+  previewTitle: {
+    ...typography.styles.h3,
+    color: colors.text.primary,
+  },
+  rideDetails: {
+    marginBottom: spacing[4],
+  },
+  detailRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginBottom: spacing[2],
+  },
+  detailText: {
+    ...typography.styles.body,
+    color: colors.text.secondary,
+    marginLeft: spacing[2],
+    flex: 1,
+  },
+  detailTextSmall: {
+    ...typography.styles.bodySmall,
+    color: colors.text.secondary,
+    marginLeft: spacing[2],
+    flex: 1,
+  },
+  fareText: {
+    ...typography.styles.body,
+    color: colors.primary[600],
+    fontWeight: '600' as const,
+    fontSize: 18,
+    marginLeft: spacing[2],
+    flex: 1,
+  },
+  fareTextSmall: {
+    ...typography.styles.body,
+    color: colors.primary[600],
+    fontWeight: '600' as const,
+    marginLeft: spacing[2],
+    flex: 1,
+  },
+  statusCard: {
+    marginBottom: spacing[4],
+  },
+  statusHeader: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginBottom: spacing[2],
+  },
+  statusTitle: {
+    ...typography.styles.h3,
+    color: colors.text.primary,
+    marginLeft: spacing[2],
+  },
+  statusSubtitle: {
+    ...typography.styles.body,
+    color: colors.text.secondary,
+  },
+  completedCard: {
+    marginBottom: spacing[4],
+  },
+  completedHeader: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginBottom: spacing[3],
+  },
+  completedTitle: {
+    ...typography.styles.h3,
+    color: colors.success[600],
+    marginLeft: spacing[2],
+  },
+  floatingCard: {
+    position: 'absolute' as const,
+    bottom: 80,
+    left: spacing[4],
+    right: spacing[4],
+    zIndex: 10,
+    ...shadows.md,
+  },
+  activeRideCard: {
+    padding: spacing[4],
+  },
+  activeRideHeader: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+    marginBottom: spacing[3],
+  },
+  activeRideTitle: {
+    ...typography.styles.h4,
+    color: colors.text.primary,
+  },
+  mapContainer: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: -1,
+  },
+  // Navigation Menu Modal Styles
+  menuModal: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+  },
+  menuContainer: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing[6],
+    margin: spacing[4],
+    width: '80%' as const,
+    maxWidth: 300,
+    ...shadows.lg,
+  },
+  menuTitle: {
+    ...typography.styles.h3,
+    color: colors.text.primary,
+    textAlign: 'center' as const,
+    marginBottom: spacing[4],
+  },
+  menuItem: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[2],
+    borderRadius: borderRadius.md,
+    marginBottom: spacing[2],
+  },
+  menuItemText: {
+    ...typography.styles.body,
+    color: colors.text.primary,
+    marginLeft: spacing[3],
+    flex: 1,
+  },
+  logoutItem: {
+    backgroundColor: colors.error[50],
+    borderWidth: 1,
+    borderColor: colors.error[500],
+  },
+  logoutText: {
+    color: colors.error[600],
+  },
+};
 
 

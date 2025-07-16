@@ -8,6 +8,8 @@ import {
   StyleSheet,
 } from 'react-native';
 import axios from 'axios';
+import { colors, typography } from '../theme';
+import { spacing, borderRadius } from '../theme/layout';
 
 type Props = {
   label: string;
@@ -78,7 +80,9 @@ if (err instanceof Error) {
               onPress={() => handleSelect(item.description)}
               style={styles.suggestion}
             >
-              <Text>{item.description}</Text>
+              <Text style={[typography.styles.body, { color: colors.text.primary }]}>
+                {item.description}
+              </Text>
             </TouchableOpacity>
           )}
         />
@@ -89,22 +93,31 @@ if (err instanceof Error) {
 
 const styles = StyleSheet.create({
   input: {
-    height: 44,
-    borderColor: '#ccc',
+    height: 48,
+    borderColor: colors.border,
     borderWidth: 1,
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff',
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing[3],
+    backgroundColor: colors.surface,
+    ...typography.styles.body,
+    color: colors.text.primary,
   },
   dropdown: {
-    backgroundColor: '#fff',
-    borderColor: '#ccc',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderWidth: 1,
+    borderRadius: borderRadius.md,
     maxHeight: 200,
+    marginTop: spacing[1],
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   suggestion: {
-    padding: 10,
-    borderBottomColor: '#eee',
+    padding: spacing[3],
+    borderBottomColor: colors.border,
     borderBottomWidth: 1,
   },
 });

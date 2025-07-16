@@ -6,6 +6,7 @@ import { useIsFocused } from '@react-navigation/native';
 // @ts-ignore
 import PolylineDecoder from '@mapbox/polyline';
 import { useRideStore } from '../store/useRideStore';
+import { colors } from '../theme';
 
 type Props = {
   encodedPolyline?: string;
@@ -35,29 +36,50 @@ const MapScreen: React.FC<Props> = ({ encodedPolyline, driverLocation }) => {
     if (location) return;
 
     const getLocation = async () => {
-      if (Platform.OS === 'android') {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
-        );
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          return;
+      try {
+        if (Platform.OS === 'android') {
+          try {
+            const granted = await PermissionsAndroid.request(
+              PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+            );
+            if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+              console.log('Location permission denied');
+              return;
+            }
+          } catch (permissionError) {
+            console.warn('Permission request failed:', permissionError);
+            return;
+          }
         }
+        
+        Geolocation.getCurrentPosition(
+          (pos) => {
+            try {
+              setLocation({
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+              });
+            } catch (setError) {
+              console.warn('Failed to set location:', setError);
+            }
+          },
+          (err) => {
+            console.warn('Geolocation error:', err);
+          },
+          { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 }
+        );
+      } catch (error) {
+        console.warn('Location setup failed:', error);
       }
-      Geolocation.getCurrentPosition(
-        (pos) => {
-          setLocation({
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
-          });
-        },
-        (err) => {
-          console.warn(err);
-        },
-        { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
-      );
     };
-    getLocation();
-  }, [isFocused, location]);
+    
+    // Add delay to prevent immediate crash
+    const timeoutId = setTimeout(() => {
+      getLocation();
+    }, 1000);
+
+    return () => clearTimeout(timeoutId);
+  }, [isFocused, location, setLocation]);
 
   useEffect(() => {
     if (encodedPolyline) {
@@ -68,18 +90,25 @@ const MapScreen: React.FC<Props> = ({ encodedPolyline, driverLocation }) => {
         setRouteCoordinates(decoded);
 
         if (mapRef.current && decoded.length > 0) {
-          mapRef.current.fitToCoordinates(decoded, {
-            edgePadding: { top: 80, right: 80, bottom: 80, left: 80 },
-            animated: true,
-          });
+          setTimeout(() => {
+            try {
+              mapRef.current?.fitToCoordinates(decoded, {
+                edgePadding: { top: 80, right: 80, bottom: 80, left: 80 },
+                animated: true,
+              });
+            } catch (fitError) {
+              console.warn('Failed to fit coordinates:', fitError);
+            }
+          }, 500);
         }
-      } catch (e) {
+      } catch (decodeError) {
+        console.warn('Failed to decode polyline:', decodeError);
         setRouteCoordinates([]);
       }
     } else {
       setRouteCoordinates([]);
     }
-  }, [encodedPolyline]);
+  }, [encodedPolyline, setRouteCoordinates]);
 
   useEffect(() => {
     if (mapRef.current && routeCoordinates.length > 0 && isFocused) {
@@ -105,12 +134,21 @@ const MapScreen: React.FC<Props> = ({ encodedPolyline, driverLocation }) => {
     : DEFAULT_REGION;
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.container}>
+      {/* Map with error boundary */}
       <MapView
         ref={mapRef}
-        style={{ flex: 1 }}
+        style={styles.map}
         initialRegion={region}
-        showsUserLocation
+        showsUserLocation={false}
+        showsMyLocationButton={false}
+        showsCompass={false}
+        mapType="standard"
+        loadingEnabled={true}
+        loadingIndicatorColor="#007bff"
+        onMapReady={() => {
+          console.log('Map ready');
+        }}
       >
         {location && (
           <Marker
@@ -161,6 +199,12 @@ const MapScreen: React.FC<Props> = ({ encodedPolyline, driverLocation }) => {
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  map: {
+    flex: 1,
+  },
   myLocationBtn: {
     position: 'absolute',
     bottom: 24,

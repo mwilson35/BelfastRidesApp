@@ -15,6 +15,7 @@ import ModernCard from './ui/ModernCard';
 import { colors, typography } from '../theme';
 import { spacing, borderRadius, shadows } from '../theme/layout';
 
+
 type Props = {
   onLogin: (userRole: string, accessToken: string) => void;
 };
@@ -27,6 +28,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   
+
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Error', 'Please fill in all fields');
@@ -55,57 +57,23 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <MaterialIcons name="local-taxi" size={64} color={colors.primary[500]} />
-          <Text style={styles.appTitle}>Belfast Rides</Text>
-          <Text style={styles.subtitle}>Welcome back</Text>
-        </View>
-
-        {/* Login Form */}
-        <ModernCard style={styles.formCard}>
-          <Text style={styles.formTitle}>Sign In</Text>
-          
-          <View style={styles.inputContainer}>
-            <MaterialIcons name="email" size={20} color={colors.text.secondary} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Email address"
-              placeholderTextColor={colors.text.tertiary}
-              value={email}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              onChangeText={setEmail}
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <MaterialIcons name="lock" size={20} color={colors.text.secondary} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor={colors.text.tertiary}
-              value={password}
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-              onChangeText={setPassword}
-            />
-          </View>
-
-          {message && (
-            <Text style={styles.errorMessage}>{message}</Text>
-          )}
+    <View style={styles.container}>
+      <Text style={styles.heading}>Login</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        value={email}
+        autoCapitalize="none"
+        onChangeText={setEmail}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        value={password}
+        secureTextEntry
+        autoCapitalize="none"
+        onChangeText={setPassword}
+      />
 
           <ModernButton
             title="Sign In"
@@ -113,26 +81,19 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
             loading={loading}
             size="lg"
             fullWidth
-            style={styles.loginButton}
           />
 
-          <TouchableOpacity 
-            style={styles.forgotPassword}
-            onPress={() => navigation.navigate('ForgotPassword')}
-          >
-            <Text style={styles.forgotPasswordText}>Forgot password?</Text>
-          </TouchableOpacity>
-        </ModernCard>
+<TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+        <Text style={styles.link}>Don’t have an account? Sign up</Text>
+      </TouchableOpacity>
 
-        {/* Sign Up Link */}
-        <View style={styles.signupContainer}>
-          <Text style={styles.signupText}>Don't have an account? </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-            <Text style={styles.signupLink}>Sign up</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+<TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+  <Text style={styles.link}>Forgot password?</Text>
+</TouchableOpacity>
+
+
+      {message ? <Text style={styles.message}>{message}</Text> : null}
+    </View>
   );
 };
 
