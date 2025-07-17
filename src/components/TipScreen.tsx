@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   Switch,
+  Modal,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
@@ -52,6 +53,11 @@ const TipScreen: React.FC<Props> = ({ token }) => {
   });
   const [recentRides, setRecentRides] = useState<RecentRide[]>([]);
   const [customAmount, setCustomAmount] = useState('');
+  
+  // Tip modal states
+  const [showTipModal, setShowTipModal] = useState(false);
+  const [selectedRide, setSelectedRide] = useState<RecentRide | null>(null);
+  const [customTipAmount, setCustomTipAmount] = useState('');
 
   const quickTipAmounts = [1, 3, 5, 10];
 
@@ -150,8 +156,8 @@ const TipScreen: React.FC<Props> = ({ token }) => {
 
   const updateCustomAmount = () => {
     const amount = parseFloat(customAmount);
-    if (isNaN(amount) || amount < 0 || amount > 100) {
-      Alert.alert('Invalid Amount', 'Please enter a valid tip amount between £0 and £100');
+    if (isNaN(amount) || amount < 0 || amount > 50) {
+      Alert.alert('Invalid Amount', 'Please enter a valid tip amount between £0 and £50');
       return;
     }
     updateTipSettings({ default_tip_amount: amount });
@@ -182,36 +188,34 @@ const TipScreen: React.FC<Props> = ({ token }) => {
   };
 
   const showTipAmountSelector = (ride: RecentRide) => {
-    Alert.alert(
-      'Add Tip',
-      `Add tip for ride to ${ride.destination}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: '£1', onPress: () => addTipToRide(ride.id, 1) },
-        { text: '£3', onPress: () => addTipToRide(ride.id, 3) },
-        { text: '£5', onPress: () => addTipToRide(ride.id, 5) },
-        { 
-          text: 'Custom', 
-          onPress: () => {
-            Alert.prompt(
-              'Custom Tip Amount',
-              'Enter tip amount (£):',
-              (value) => {
-                const amount = parseFloat(value || '0');
-                if (!isNaN(amount) && amount > 0 && amount <= 100) {
-                  addTipToRide(ride.id, amount);
-                } else {
-                  Alert.alert('Invalid Amount', 'Please enter a valid amount');
-                }
-              },
-              'plain-text',
-              '',
-              'numeric'
-            );
-          }
-        }
-      ]
-    );
+    setSelectedRide(ride);
+    setCustomTipAmount('');
+    setShowTipModal(true);
+  };
+
+  const handleTipSelection = async (amount: number) => {
+    if (selectedRide) {
+      setShowTipModal(false);
+      await addTipToRide(selectedRide.id, amount);
+      setSelectedRide(null);
+    }
+  };
+
+  const handleCustomTip = async () => {
+    if (!selectedRide) return;
+    
+    const amount = parseFloat(customTipAmount);
+    if (isNaN(amount) || amount < 0.5 || amount > 50) {
+      Alert.alert(
+        'Invalid Amount', 
+        'Please enter a valid amount between £0.50 and £50.00'
+      );
+      return;
+    }
+    
+    setShowTipModal(false);
+    await addTipToRide(selectedRide.id, amount);
+    setSelectedRide(null);
   };
 
   if (loading) {
@@ -362,6 +366,100 @@ const TipScreen: React.FC<Props> = ({ token }) => {
           )}
         </ModernCard>
       </ScrollView>
+
+      {/* Custom Tip Modal */}
+      <Modal
+        visible={showTipModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowTipModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.tipModal}>
+            <Text style={styles.tipModalTitle}>Add Tip</Text>
+            {selectedRide && (
+              <>
+                <Text style={styles.tipModalSubtitle}>
+                  {selectedRide.pickup_location} → {selectedRide.destination}
+                </Text>
+                <Text style={styles.tipModalFare}>
+                  Fare: £{Number(selectedRide.fare || 0).toFixed(2)}
+                </Text>
+
+                {/* Preset Tip Amounts */}
+                <Text style={styles.tipModalSectionTitle}>Quick Amounts</Text>
+                <View style={styles.tipButtonsRow}>
+                  <TouchableOpacity 
+                    style={styles.tipButton} 
+                    onPress={() => handleTipSelection(1)}
+                  >
+                    <Text style={styles.tipButtonText}>£1</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.tipButton} 
+                    onPress={() => handleTipSelection(2)}
+                  >
+                    <Text style={styles.tipButtonText}>£2</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.tipButton} 
+                    onPress={() => handleTipSelection(3)}
+                  >
+                    <Text style={styles.tipButtonText}>£3</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.tipButtonsRow}>
+                  <TouchableOpacity 
+                    style={styles.tipButton} 
+                    onPress={() => handleTipSelection(5)}
+                  >
+                    <Text style={styles.tipButtonText}>£5</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.tipButton} 
+                    onPress={() => handleTipSelection(10)}
+                  >
+                    <Text style={styles.tipButtonText}>£10</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.tipButton} 
+                    onPress={() => handleTipSelection(20)}
+                  >
+                    <Text style={styles.tipButtonText}>£20</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Custom Amount Input */}
+                <Text style={styles.tipModalSectionTitle}>Custom Amount</Text>
+                <View style={styles.customTipRow}>
+                  <TextInput
+                    style={styles.customTipInput}
+                    placeholder="Enter amount"
+                    placeholderTextColor={colors.text.secondary}
+                    value={customTipAmount}
+                    onChangeText={setCustomTipAmount}
+                    keyboardType="numeric"
+                  />
+                  <TouchableOpacity 
+                    style={styles.customTipButton} 
+                    onPress={handleCustomTip}
+                  >
+                    <Text style={styles.customTipButtonText}>Add Tip</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Cancel Button */}
+                <TouchableOpacity 
+                  style={styles.cancelButton} 
+                  onPress={() => setShowTipModal(false)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -536,6 +634,105 @@ const styles = {
     ...typography.styles.bodySmall,
     color: colors.warning[700],
     flex: 1,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    padding: spacing[4],
+  },
+  tipModal: {
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.lg,
+    padding: spacing[6],
+    width: '100%' as const,
+    maxWidth: 400,
+  },
+  tipModalTitle: {
+    ...typography.styles.h2,
+    color: colors.text.primary,
+    textAlign: 'center' as const,
+    marginBottom: spacing[2],
+  },
+  tipModalSubtitle: {
+    ...typography.styles.body,
+    color: colors.text.primary,
+    textAlign: 'center' as const,
+    marginBottom: spacing[1],
+  },
+  tipModalFare: {
+    ...typography.styles.bodySmall,
+    color: colors.text.secondary,
+    textAlign: 'center' as const,
+    marginBottom: spacing[4],
+  },
+  tipModalSectionTitle: {
+    ...typography.styles.body,
+    color: colors.text.primary,
+    fontWeight: '600' as const,
+    marginTop: spacing[4],
+    marginBottom: spacing[3],
+  },
+  tipButtonsRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    marginBottom: spacing[3],
+    gap: spacing[2],
+  },
+  tipButton: {
+    flex: 1,
+    backgroundColor: colors.primary[50],
+    borderColor: colors.primary[200],
+    borderWidth: 1,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing[3],
+    alignItems: 'center' as const,
+  },
+  tipButtonText: {
+    ...typography.styles.body,
+    color: colors.primary[700],
+    fontWeight: '600' as const,
+  },
+  customTipRow: {
+    flexDirection: 'row' as const,
+    gap: spacing[3],
+    marginBottom: spacing[4],
+  },
+  customTipInput: {
+    flex: 1,
+    ...typography.styles.body,
+    color: colors.text.primary,
+    backgroundColor: colors.gray[50],
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+  },
+  customTipButton: {
+    backgroundColor: colors.primary[500],
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    justifyContent: 'center' as const,
+  },
+  customTipButtonText: {
+    ...typography.styles.body,
+    color: colors.white,
+    fontWeight: '600' as const,
+  },
+  cancelButton: {
+    backgroundColor: colors.gray[100],
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing[3],
+    alignItems: 'center' as const,
+    marginTop: spacing[2],
+  },
+  cancelButtonText: {
+    ...typography.styles.body,
+    color: colors.text.secondary,
+    fontWeight: '600' as const,
   },
 };
 
