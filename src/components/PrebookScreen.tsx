@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import { Alert } from 'react-native';
 import MapView, { Polyline, Marker } from 'react-native-maps';
 import PrebookMap from './PrebookMap';
+import LocationAutocompleteInput from './LocationAutocompleteInput';
 
 
 
@@ -84,20 +85,16 @@ Alert.alert('Booking failed', (err as Error).message);
 
   return (
     <View style={{ flex: 1, padding: 20 }}>
-      <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>Pickup Location</Text>
-      <TextInput
+      <LocationAutocompleteInput
+        label="Pickup Location"
         value={pickup}
-        onChangeText={setPickup}
-        placeholder="Enter pickup"
-        style={{ borderBottomWidth: 1, marginBottom: 16 }}
+        onChange={setPickup}
       />
 
-      <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>Destination</Text>
-      <TextInput
+      <LocationAutocompleteInput
+        label="Destination"
         value={destination}
-        onChangeText={setDestination}
-        placeholder="Enter destination"
-        style={{ borderBottomWidth: 1, marginBottom: 16 }}
+        onChange={setDestination}
       />
 
       <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>Scheduled Date & Time</Text>
