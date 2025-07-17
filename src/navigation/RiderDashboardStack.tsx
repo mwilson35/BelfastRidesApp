@@ -17,7 +17,11 @@ export type RiderDashboardStackParamList = {
   MyScheduledRides: undefined;
   ScheduledRideDetails: { ride: Ride };
   PaymentMethods: undefined;
-  Emergency: undefined;
+  Emergency: {
+    isRideActive?: boolean;
+    rideId?: number;
+    currentLocation?: { latitude: number; longitude: number };
+  } | undefined;
   Settings: undefined;
   FavoriteLocations: undefined;
 };
@@ -66,7 +70,7 @@ const RiderDashboardStack = ({ token, logout }: { token: string; logout: () => v
       </Stack.Screen>
 
       <Stack.Screen name="Emergency">
-        {(props) => <EmergencyFeaturesScreen {...props} token={token} />}
+        {(props) => <EmergencyFeaturesScreen {...props} token={token} {...(props.route.params || {})} />}
       </Stack.Screen>
 
       <Stack.Screen name="Settings">

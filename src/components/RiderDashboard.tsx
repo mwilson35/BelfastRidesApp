@@ -32,6 +32,9 @@ import ModernCard from './ui/ModernCard';
 import ModernButton from './ui/ModernButton';
 import StatusBadge from './ui/StatusBadge';
 
+// Services
+import PrivacyService from '../services/PrivacyService';
+
 // Theme
 import { colors, typography } from '../theme';
 import { spacing, borderRadius, shadows } from '../theme/layout';
@@ -121,6 +124,9 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
     // Listen for driver location updates
     socket.on('driverLocationUpdate', (location) => {
       setDriverLocation(location);
+      
+      // Share location data for service improvement (only if user consented)
+      PrivacyService.shareLocationData(location, 'driver_tracking');
     });
 
     return () => {
@@ -192,6 +198,13 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
       return;
     }
 
+    // Track ride preview request (only if user consented)
+    PrivacyService.trackEvent('ride_preview_requested', {
+      hasPickup: !!pickupLocation,
+      hasDestination: !!destination,
+      timestamp: new Date().toISOString()
+    });
+
     setLoading(true);
     setPreview(null);
     try {
@@ -206,8 +219,19 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Preview failed');
       setPreview(data);
+      
+      // Track successful preview (only if user consented)
+      PrivacyService.trackEvent('ride_preview_success', {
+        estimatedPrice: data.estimatedPrice,
+        estimatedTime: data.estimatedTime
+      });
     } catch (err: any) {
       Alert.alert('Preview Failed', err.message);
+      
+      // Track preview failure (only if user consented)
+      PrivacyService.trackEvent('ride_preview_failed', {
+        error: err.message
+      });
     } finally {
       setLoading(false);
     }
@@ -450,6 +474,26 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
               />
             )}
 
+            {/* Safety & Emergency (during active ride) */}
+            {rideStatus && ['accepted', 'in_progress'].includes(rideStatus) && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Safety</Text>
+                <View style={styles.buttonRow}>
+                  <TouchableOpacity 
+                    style={styles.emergencyButton}
+                    onPress={() => (navigation as any).navigate('Emergency', {
+                      isRideActive: rideStatus && ['accepted', 'in_progress'].includes(rideStatus),
+                      rideId: requestedRide?.rideId,
+                      currentLocation: driverLocation || undefined
+                    })}
+                  >
+                    <MaterialIcons name="emergency" size={20} color="#fff" />
+                    <Text style={styles.emergencyButtonText}>Emergency</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
             {/* Active Ride Info */}
             {requestedRide && rideStatus !== 'completed' && (
               <View style={styles.section}>
@@ -569,7 +613,11 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
             <Pressable
               onPress={() => {
                 setMenuVisible(false);
-                navigation.navigate('Emergency' as never);
+                (navigation as any).navigate('Emergency', {
+                  isRideActive: rideStatus && ['accepted', 'in_progress'].includes(rideStatus),
+                  rideId: requestedRide?.rideId,
+                  currentLocation: driverLocation || undefined
+                });
               }}
               style={styles.menuItem}
             >
@@ -766,6 +814,21 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontSize: 16,
     color: '#333',
+  },
+  emergencyButton: {
+    backgroundColor: '#e53e3e',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    flex: 1,
+  },
+  emergencyButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });
 
