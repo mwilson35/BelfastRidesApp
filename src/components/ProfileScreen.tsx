@@ -389,17 +389,17 @@ const ProfileScreen = ({ token }: { token: string }) => {
 
         {/* Account Actions */}
         <ModernCard style={styles.actionsCard}>
-          <Text style={styles.sectionTitle}>Account</Text>
+          <Text style={styles.sectionTitle}>Support</Text>
           
           <TouchableOpacity 
             style={styles.actionRow}
-            onPress={() => Alert.alert('Help & Support', 'Contact us at support@belfastridesapp.com')}
+            onPress={() => Alert.alert('Help & Support', 'For assistance, please contact us via the app or visit our website.')}
           >
             <View style={styles.actionContent}>
               <MaterialIcons name="help" size={24} color={colors.primary[500]} />
               <View style={styles.actionText}>
                 <Text style={styles.actionTitle}>Help & Support</Text>
-                <Text style={styles.actionSubtitle}>Get help with your account</Text>
+                <Text style={styles.actionSubtitle}>Get help with your account and rides</Text>
               </View>
             </View>
             <MaterialIcons name="chevron-right" size={24} color={colors.text.tertiary} />
@@ -407,13 +407,13 @@ const ProfileScreen = ({ token }: { token: string }) => {
 
           <TouchableOpacity 
             style={styles.actionRow}
-            onPress={() => Alert.alert('Privacy Policy', 'View privacy policy at belfastridesapp.com/privacy')}
+            onPress={() => Alert.alert('About', `Belfast Rides App\nVersion 1.0\n\nProviding reliable transportation across Belfast.`)}
           >
             <View style={styles.actionContent}>
-              <MaterialIcons name="privacy-tip" size={24} color={colors.primary[500]} />
+              <MaterialIcons name="info" size={24} color={colors.primary[500]} />
               <View style={styles.actionText}>
-                <Text style={styles.actionTitle}>Privacy Policy</Text>
-                <Text style={styles.actionSubtitle}>How we protect your data</Text>
+                <Text style={styles.actionTitle}>About</Text>
+                <Text style={styles.actionSubtitle}>App information and version</Text>
               </View>
             </View>
             <MaterialIcons name="chevron-right" size={24} color={colors.text.tertiary} />
