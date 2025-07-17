@@ -23,7 +23,7 @@ import { colors, typography } from '../theme';
 import { spacing, borderRadius } from '../theme/layout';
 
 type FavoriteLocation = {
-  id: string;
+  id: string | number; // Handle both string and number IDs from backend
   name: string;
   address: string;
   latitude: number;
@@ -53,12 +53,21 @@ const FavoriteLocationsScreen: React.FC<Props> = ({ token }) => {
 
   const fetchFavoriteLocations = async () => {
     try {
+      console.log('📋 Fetching favorite locations...');
       const res = await axios.get('http://192.168.33.5:5000/api/user/favorites', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setFavoriteLocations(res.data.locations || []);
+      
+      console.log('📋 Fetch favorites response:', res.data);
+      
+      // Handle different possible response formats
+      const locations = res.data.locations || res.data.favorites || res.data || [];
+      setFavoriteLocations(locations);
+      console.log('📋 Set favorite locations:', locations);
     } catch (err: any) {
-      console.error('Failed to fetch favorite locations:', err);
+      console.error('❌ Failed to fetch favorite locations:', err);
+      console.error('❌ Error response:', err.response?.data);
+      
       if (err.response?.status !== 404) {
         Alert.alert('Error', 'Failed to load favorite locations');
       }
@@ -75,41 +84,68 @@ const FavoriteLocationsScreen: React.FC<Props> = ({ token }) => {
 
     setSaving(true);
     try {
-      // Geocode the address
+      // Step 1: Geocode the address
+      console.log('🔍 Geocoding address:', newLocation.address);
       const geocodeRes = await axios.post(
-        'http://192.168.33.5:5000/api/geocode',
+        'http://192.168.33.5:5000/api/user/geocode',
         { address: newLocation.address },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      console.log('📍 Geocode response:', geocodeRes.data);
       const { latitude, longitude } = geocodeRes.data;
 
+      // Step 2: Add favorite location
+      const locationData = {
+        name: newLocation.name,
+        address: newLocation.address,
+        type: newLocation.type,
+        latitude,
+        longitude,
+      };
+      
+      console.log('💾 Saving location data:', locationData);
       const res = await axios.post(
         'http://192.168.33.5:5000/api/user/favorites',
-        {
-          ...newLocation,
-          latitude,
-          longitude,
-        },
+        locationData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setFavoriteLocations(prev => [...prev, res.data.location]);
+      console.log('✅ Add favorite response:', res.data);
+      
+      // Handle different possible response formats
+      const newFavorite = res.data.location || res.data.favorite || res.data;
+      setFavoriteLocations(prev => [...prev, newFavorite]);
       setShowAddLocationModal(false);
       setNewLocation({ name: '', address: '', type: 'other' });
       Alert.alert('Success', 'Favorite location added');
     } catch (err: any) {
+      console.error('❌ Failed to add favorite location:', err);
+      console.error('❌ Error response:', err.response?.data);
+      console.error('❌ Error status:', err.response?.status);
+      console.error('❌ Request URL:', err.config?.url);
+      
       if (err.response?.status === 404) {
-        Alert.alert('Feature Coming Soon', 'Favorite locations will be available once the backend is fully set up.');
+        // Check if the error is from geocoding endpoint
+        if (err.config?.url?.includes('/api/user/geocode')) {
+          Alert.alert(
+            'Address Lookup Unavailable', 
+            'The address geocoding service is not yet available. Please contact support to enable this feature.'
+          );
+        } else {
+          Alert.alert('Feature Coming Soon', 'Favorite locations will be available once the backend is fully set up.');
+        }
+      } else if (err.response?.data?.message) {
+        Alert.alert('Error', err.response.data.message);
       } else {
-        Alert.alert('Error', err.response?.data?.message || 'Failed to add location');
+        Alert.alert('Error', `Failed to add location: ${err.message}`);
       }
     } finally {
       setSaving(false);
     }
   };
 
-  const removeFavoriteLocation = async (locationId: string) => {
+  const removeFavoriteLocation = async (locationId: string | number) => {
     Alert.alert(
       'Remove Location',
       'Are you sure you want to remove this favorite location?',
@@ -120,12 +156,14 @@ const FavoriteLocationsScreen: React.FC<Props> = ({ token }) => {
           style: 'destructive',
           onPress: async () => {
             try {
+              console.log('🗑️ Removing location with ID:', locationId);
               await axios.delete(`http://192.168.33.5:5000/api/user/favorites/${locationId}`, {
                 headers: { Authorization: `Bearer ${token}` },
               });
-              setFavoriteLocations(prev => prev.filter(loc => loc.id !== locationId));
+              setFavoriteLocations(prev => prev.filter(loc => loc.id != locationId)); // Use != to handle both types
               Alert.alert('Success', 'Location removed');
             } catch (err: any) {
+              console.error('❌ Failed to remove location:', err);
               if (err.response?.status === 404) {
                 Alert.alert('Feature Coming Soon', 'Favorite locations will be available once the backend is fully set up.');
               } else {
@@ -255,10 +293,13 @@ const FavoriteLocationsScreen: React.FC<Props> = ({ token }) => {
                 style={styles.input}
                 value={newLocation.address}
                 onChangeText={(text) => setNewLocation(prev => ({ ...prev, address: text }))}
-                placeholder="Enter full address"
+                placeholder="e.g., 123 Main Street, Belfast BT1 1AA, UK"
                 autoCapitalize="words"
                 multiline
               />
+              <Text style={styles.inputHint}>
+                Include street number, street name, city, and postcode for best results
+              </Text>
             </View>
 
             <View style={styles.inputGroup}>
@@ -481,6 +522,12 @@ const styles = {
   },
   selectedTypeText: {
     color: colors.white,
+  },
+  inputHint: {
+    ...typography.styles.caption,
+    color: colors.gray[600],
+    marginTop: spacing[1],
+    fontStyle: 'italic' as const,
   },
   modalButtons: {
     flexDirection: 'row' as const,

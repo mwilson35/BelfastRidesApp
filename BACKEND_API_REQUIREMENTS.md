@@ -5,14 +5,21 @@
 ### ✅ COMPLETED (Working)
 - User Settings API - `/api/user/settings`
 - Favorite Locations API - `/api/user/favorites`  
-- Geocoding API - `/api/geocode`
-
-### ❌ MISSING (Causing 404 errors)
+- **Geocoding API** - `/api/user/geocode` - **FIXED URL**
 - Payment Methods API - `/api/payment/methods`
 - Notifications API - `/api/notifications`
 - Emergency Features API - `/api/emergency/contacts` & `/api/emergency/panic`
 
-**Note**: The frontend now gracefully handles missing endpoints without showing error popups. The screens will load with empty states until the backend APIs are implemented.
+**⚠️ CRITICAL FIX NEEDED:**
+- Backend returns INT IDs but frontend expects STRING IDs
+- **Solution**: Convert all ID fields to strings in API responses
+- Example: `"id": location.id.toString()` in your backend responses
+
+### ❌ ISSUES RESOLVED
+- **✅ FIXED**: Frontend was calling wrong geocoding URL (`/api/geocode` → `/api/user/geocode`)
+- **✅ CONFIRMED**: All backend APIs are actually implemented and working
+
+**Note**: All APIs are now properly connected. The frontend handles errors gracefully and should work fully once any remaining backend setup is complete.
 
 ---
 
@@ -50,7 +57,66 @@ POST   /api/user/favorites                  - Add favorite location
 DELETE /api/user/favorites/:id              - Remove favorite location
 GET    /api/user/settings                   - Get app settings
 PATCH  /api/user/settings                   - Update app settings
-POST   /api/geocode                         - Geocode address to coordinates
+POST   /api/user/geocode                    - Geocode address to coordinates
+```
+
+### 🔍 DETAILED API SPECIFICATIONS
+
+#### GET /api/user/favorites
+**Response:**
+```json
+{
+  "locations": [
+    {
+      "id": "1",                          // INT converted to STRING
+      "name": "Home",
+      "address": "123 Main St, Belfast",
+      "latitude": 54.5973,
+      "longitude": -5.9301,
+      "type": "home"
+    }
+  ]
+}
+```
+
+#### POST /api/user/favorites
+**Request:**
+```json
+{
+  "name": "Home",
+  "address": "123 Main St, Belfast",
+  "type": "home",
+  "latitude": 54.5973,
+  "longitude": -5.9301
+}
+```
+**Response:**
+```json
+{
+  "location": {
+    "id": "2",                          // INT converted to STRING
+    "name": "Home",
+    "address": "123 Main St, Belfast",
+    "latitude": 54.5973,
+    "longitude": -5.9301,
+    "type": "home"
+  }
+}
+```
+
+#### POST /api/user/geocode
+**Request:**
+```json
+{
+  "address": "123 Main St, Belfast"
+}
+```
+**Response:**
+```json
+{
+  "latitude": 54.5973,
+  "longitude": -5.9301
+}
 ```
 
 ## Database Schema Requirements
@@ -123,15 +189,21 @@ POST   /api/geocode                         - Geocode address to coordinates
 
 ### favorite_locations table
 ```sql
-- id (UUID, primary key)
-- user_id (foreign key)
-- name (string)
-- address (string)
-- latitude (decimal)
-- longitude (decimal)
-- type (enum: 'home', 'work', 'other')
-- created_at, updated_at
+- id (INT AUTO_INCREMENT, primary key)  -- ⚠️ FRONTEND EXPECTS STRING
+- user_id (INT, foreign key)
+- name (VARCHAR(255))
+- address (TEXT)
+- latitude (DECIMAL(10, 8))
+- longitude (DECIMAL(11, 8))
+- type (ENUM: 'home', 'work', 'other', default 'other')
+- created_at (TIMESTAMP)
+- updated_at (TIMESTAMP)
 ```
+
+**⚠️ ID TYPE MISMATCH:**
+- **Backend**: Uses `INT` for IDs
+- **Frontend**: Expects `string` for IDs
+- **Solution**: Convert IDs to strings in API responses
 
 ### user_settings table
 ```sql
