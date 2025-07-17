@@ -4,14 +4,22 @@ import RiderDashboard from '../components/RiderDashboard';
 import ProfileScreen from '../components/ProfileScreen';
 import RideHistoryScreen from '../components/RideHistoryScreen';
 import MyScheduledRidesScreen from '../components/MyScheduledRidesScreen';
-import ScheduledRideDetailsScreen from '../components/ScheduledRideDetailsScreen'; // ← 🧠 You forgot me, rude
+import ScheduledRideDetailsScreen from '../components/ScheduledRideDetailsScreen';
+import PaymentMethodsScreen from '../components/PaymentMethodsScreen';
+import NotificationsScreen from '../components/NotificationsScreen';
+import EmergencyFeaturesScreen from '../components/EmergencyFeaturesScreen';
+import SettingsScreen from '../components/SettingsScreen';
 
 export type RiderDashboardStackParamList = {
   MainDashboard: undefined;
   Profile: undefined;
   RideHistory: undefined;
   MyScheduledRides: undefined;
-  ScheduledRideDetails: { ride: Ride }; // ← This is the important one
+  ScheduledRideDetails: { ride: Ride };
+  PaymentMethods: undefined;
+  Notifications: undefined;
+  Emergency: undefined;
+  Settings: undefined;
 };
 
 type Ride = {
@@ -51,6 +59,22 @@ const RiderDashboardStack = ({ token, logout }: { token: string; logout: () => v
 
       <Stack.Screen name="ScheduledRideDetails">
         {(props) => <ScheduledRideDetailsScreen {...props} token={token} />}
+      </Stack.Screen>
+
+      <Stack.Screen name="PaymentMethods">
+        {(props) => <PaymentMethodsScreen {...props} token={token} />}
+      </Stack.Screen>
+
+      <Stack.Screen name="Notifications">
+        {(props) => <NotificationsScreen {...props} token={token} />}
+      </Stack.Screen>
+
+      <Stack.Screen name="Emergency">
+        {(props) => <EmergencyFeaturesScreen {...props} token={token} />}
+      </Stack.Screen>
+
+      <Stack.Screen name="Settings">
+        {(props) => <SettingsScreen {...props} token={token} />}
       </Stack.Screen>
     </Stack.Navigator>
   );

@@ -283,6 +283,55 @@ const ProfileScreen = ({ token }: { token: string }) => {
             </View>
           </View>
         </ModernCard>
+
+        {/* Quick Actions */}
+        <ModernCard style={styles.actionsCard}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          
+          <TouchableOpacity style={styles.actionRow} onPress={() => navigation.navigate('PaymentMethods' as never)}>
+            <View style={styles.actionContent}>
+              <MaterialIcons name="payment" size={24} color={colors.primary[500]} />
+              <View style={styles.actionText}>
+                <Text style={styles.actionTitle}>Payment Methods</Text>
+                <Text style={styles.actionSubtitle}>Manage cards and payment options</Text>
+              </View>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color={colors.text.tertiary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionRow} onPress={() => navigation.navigate('Notifications' as never)}>
+            <View style={styles.actionContent}>
+              <MaterialIcons name="notifications" size={24} color={colors.primary[500]} />
+              <View style={styles.actionText}>
+                <Text style={styles.actionTitle}>Notifications</Text>
+                <Text style={styles.actionSubtitle}>Manage notification preferences</Text>
+              </View>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color={colors.text.tertiary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionRow} onPress={() => navigation.navigate('Emergency' as never)}>
+            <View style={styles.actionContent}>
+              <MaterialIcons name="emergency" size={24} color={colors.error[500]} />
+              <View style={styles.actionText}>
+                <Text style={styles.actionTitle}>Emergency Features</Text>
+                <Text style={styles.actionSubtitle}>Safety contacts and panic mode</Text>
+              </View>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color={colors.text.tertiary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionRow} onPress={() => navigation.navigate('Settings' as never)}>
+            <View style={styles.actionContent}>
+              <MaterialIcons name="settings" size={24} color={colors.primary[500]} />
+              <View style={styles.actionText}>
+                <Text style={styles.actionTitle}>Settings</Text>
+                <Text style={styles.actionSubtitle}>App preferences and favorites</Text>
+              </View>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color={colors.text.tertiary} />
+          </TouchableOpacity>
+        </ModernCard>
       </ScrollView>
     </View>
   );
@@ -414,6 +463,36 @@ const styles = {
   },
   statsCard: {
     marginBottom: spacing[4],
+  },
+  actionsCard: {
+    marginBottom: spacing[4],
+  },
+  actionRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    paddingVertical: spacing[4],
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray[200],
+  },
+  actionContent: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    flex: 1,
+  },
+  actionText: {
+    marginLeft: spacing[3],
+    flex: 1,
+  },
+  actionTitle: {
+    ...typography.styles.body,
+    color: colors.text.primary,
+    fontWeight: '600' as const,
+  },
+  actionSubtitle: {
+    ...typography.styles.bodySmall,
+    color: colors.text.secondary,
+    marginTop: spacing[1],
   },
   statsRow: {
     flexDirection: 'row' as const,
