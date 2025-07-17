@@ -79,6 +79,9 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
   const [isConnected, setIsConnected] = useState(true);
   const [isReconnecting, setIsReconnecting] = useState(false);
 
+  // Favorites state
+  const [favoriteLocations, setFavoriteLocations] = useState<any[]>([]);
+
   // Socket setup
   useEffect(() => {
     if (!token) return;
@@ -148,7 +151,22 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
   useFocusEffect(
     React.useCallback(() => {
       setMapKey(prev => prev + 1);
-    }, [])
+      
+      // Load favorites when screen comes into focus
+      const loadFavorites = async () => {
+        try {
+          const res = await axios.get('http://192.168.33.5:5000/api/user/favorites', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const favorites = res.data.locations || res.data.favorites || res.data || [];
+          setFavoriteLocations(favorites);
+        } catch (err) {
+          console.log('Could not load favorites');
+        }
+      };
+      
+      if (token) loadFavorites();
+    }, [token])
   );
 
   const handlePostRatingCleanup = () => {
@@ -347,6 +365,50 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
                     <Button title="Clear" onPress={handleClearPreview} color="#f77" />
                   )}
                 </View>
+              </View>
+            )}
+
+            
+            {favoriteLocations.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Quick Select ({favoriteLocations.length} favorites)</Text>
+                {favoriteLocations.map((location: any) => (
+                  <View key={location.id} style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                    <TouchableOpacity
+                      style={{ 
+                        flex: 1, 
+                        backgroundColor: '#e3f2fd', 
+                        padding: 10, 
+                        borderRadius: 8,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 8
+                      }}
+                      onPress={() => {
+                        setPickupLocation(location.address);
+                        // Don't clear destination - let user keep it if they want
+                      }}
+                    >
+                      <MaterialIcons name="my-location" size={16} color="#1976d2" />
+                      <Text style={{ fontSize: 12, color: '#1976d2' }}>From: {location.name}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={{ 
+                        flex: 1, 
+                        backgroundColor: '#1976d2', 
+                        padding: 10, 
+                        borderRadius: 8,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 8
+                      }}
+                      onPress={() => setDestination(location.address)}
+                    >
+                      <MaterialIcons name="place" size={16} color="white" />
+                      <Text style={{ fontSize: 12, color: 'white' }}>To: {location.name}</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
               </View>
             )}
 

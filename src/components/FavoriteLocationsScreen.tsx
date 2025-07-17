@@ -185,7 +185,23 @@ const FavoriteLocationsScreen: React.FC<Props> = ({ token }) => {
   };
 
   const renderFavoriteLocation = (location: FavoriteLocation) => (
-    <TouchableOpacity key={location.id} style={styles.locationCard}>
+    <TouchableOpacity 
+      key={location.id} 
+      style={styles.locationCard}
+      onPress={() => {
+        Alert.alert(
+          location.name,
+          `Address: ${location.address}\n\nTo use this location for booking, go back to the main screen and use the quick-select buttons.`,
+          [
+            { text: 'OK', style: 'default' },
+            { 
+              text: 'Go to Main Screen', 
+              onPress: () => navigation.goBack()
+            }
+          ]
+        );
+      }}
+    >
       <View style={styles.locationContent}>
         <View style={styles.locationIcon}>
           <MaterialIcons 
