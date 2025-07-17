@@ -27,11 +27,36 @@ type Profile = {
   username: string;
   email: string;
   profilePicUrl?: string;
+  memberSince?: string;
+  role?: string;
+};
+
+type Statistics = {
+  totalRides: number;
+  completedRides: number;
+  totalSpent: number;
+  totalDistance: number;
+  avgFare: number;
+  favoritesCount: number;
+};
+
+type DashboardData = {
+  user: Profile;
+  statistics: Statistics;
+  recentActivity: Array<{
+    id: number;
+    from: string;
+    to: string;
+    fare: number;
+    status: string;
+    date: string;
+  }>;
 };
 
 const ProfileScreen = ({ token }: { token: string }) => {
   const navigation = useNavigation();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [name, setName] = useState('');
@@ -45,14 +70,36 @@ const ProfileScreen = ({ token }: { token: string }) => {
 
   const fetchProfile = async () => {
     try {
-      const res = await axios.get('http://192.168.33.5:5000/api/user/profile', {
+      // First, always fetch basic profile data
+      const profileRes = await axios.get('http://192.168.33.5:5000/api/user/profile', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setProfile(res.data);
-      setName(res.data.username);
-      setEmail(res.data.email);
-    } catch (err) {
-      console.error('Profile load failed', err);
+      
+      setProfile(profileRes.data);
+      setName(profileRes.data.username);
+      setEmail(profileRes.data.email);
+
+      // Then try to get dashboard stats separately
+      try {
+        const dashboardRes = await axios.get('http://192.168.33.5:5000/api/user/dashboard', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        if (dashboardRes.data && dashboardRes.data.statistics) {
+          setStatistics(dashboardRes.data.statistics);
+          // Also update profile with more complete data if available
+          if (dashboardRes.data.user) {
+            setProfile(dashboardRes.data.user);
+          }
+        }
+      } catch (statsErr: any) {
+        // Dashboard stats failed, but that's okay - profile still works
+        console.log('Stats not available:', statsErr.response?.status || 'Network error');
+        setStatistics(null);
+      }
+      
+    } catch (err: any) {
+      console.error('Profile load failed:', err);
       Alert.alert('Error', 'Failed to load profile');
     } finally {
       setLoading(false);
@@ -108,8 +155,8 @@ const ProfileScreen = ({ token }: { token: string }) => {
   };
 
   const handleSave = async () => {
-    if (!name.trim() || !email.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+    if (!email.trim()) {
+      Alert.alert('Error', 'Please enter a valid email address');
       return;
     }
 
@@ -117,7 +164,7 @@ const ProfileScreen = ({ token }: { token: string }) => {
     try {
       const res = await axios.put(
         'http://192.168.33.5:5000/api/user/profile',
-        { username: name, email },
+        { email }, // Only update email, not username
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -125,8 +172,8 @@ const ProfileScreen = ({ token }: { token: string }) => {
           },
         }
       );
-      Alert.alert('Success', 'Profile updated successfully');
-      setProfile({ ...profile!, username: name, email });
+      Alert.alert('Success', 'Email updated successfully');
+      setProfile({ ...profile!, email });
       setEditMode(false);
     } catch (err) {
       console.error('Update failed:', err);
@@ -161,9 +208,11 @@ const ProfileScreen = ({ token }: { token: string }) => {
     );
   }
 
-  const imageUri = profile.profilePicUrl?.startsWith('http')
+  const imageUri = profile?.profilePicUrl?.startsWith('http')
     ? profile.profilePicUrl
-    : `http://192.168.33.5:5000/${profile.profilePicUrl}`;
+    : profile?.profilePicUrl 
+    ? `http://192.168.33.5:5000/${profile.profilePicUrl}`
+    : null;
 
   return (
     <View style={styles.container}>
@@ -185,6 +234,14 @@ const ProfileScreen = ({ token }: { token: string }) => {
                 <ActivityIndicator size="large" color={colors.primary[500]} />
               </View>
             )}
+            <Text style={styles.profileName}>{profile?.username || 'User'}</Text>
+            <Text style={styles.profileRole}>
+              {profile?.role || 'Rider'} • Member since {
+                profile?.memberSince 
+                  ? new Date(profile.memberSince).getFullYear() 
+                  : 'Recently'
+              }
+            </Text>
             <ModernButton
               title={uploadingPhoto ? "Uploading..." : "Change Photo"}
               onPress={handlePickPhoto}
@@ -205,10 +262,9 @@ const ProfileScreen = ({ token }: { token: string }) => {
             <View style={styles.inputContainer}>
               <MaterialIcons name="person" size={20} color={colors.text.secondary} style={styles.inputIcon} />
               <TextInput
-                style={[styles.input, !editMode && styles.inputDisabled]}
+                style={[styles.input, styles.inputDisabled]}
                 value={name}
-                onChangeText={setName}
-                editable={editMode}
+                editable={false}
                 placeholder="Enter your full name"
                 placeholderTextColor={colors.text.tertiary}
               />
@@ -239,14 +295,13 @@ const ProfileScreen = ({ token }: { token: string }) => {
                   title="Cancel"
                   onPress={() => {
                     setEditMode(false);
-                    setName(profile.username);
-                    setEmail(profile.email);
+                    setEmail(profile.email); // Only revert email, not name
                   }}
                   variant="outline"
                   style={styles.cancelButton}
                 />
                 <ModernButton
-                  title="Save Changes"
+                  title="Save Email"
                   onPress={handleSave}
                   loading={saving}
                   style={styles.saveButton}
@@ -254,7 +309,7 @@ const ProfileScreen = ({ token }: { token: string }) => {
               </View>
             ) : (
               <ModernButton
-                title="Edit Profile"
+                title="Edit Email"
                 onPress={() => setEditMode(true)}
                 fullWidth
               />
@@ -264,58 +319,101 @@ const ProfileScreen = ({ token }: { token: string }) => {
 
         {/* Account Stats */}
         <ModernCard style={styles.statsCard}>
-          <Text style={styles.sectionTitle}>Account Stats</Text>
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <MaterialIcons name="directions-car" size={24} color={colors.primary[500]} />
-              <Text style={styles.statValue}>42</Text>
-              <Text style={styles.statLabel}>Total Rides</Text>
+          <Text style={styles.sectionTitle}>Account Overview</Text>
+          {statistics ? (
+            <>
+              <View style={styles.statsRow}>
+                <View style={styles.statItem}>
+                  <MaterialIcons name="directions-car" size={24} color={colors.primary[500]} />
+                  <Text style={styles.statValue}>{statistics.totalRides}</Text>
+                  <Text style={styles.statLabel}>Total Rides</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <MaterialIcons name="attach-money" size={24} color={colors.success[500]} />
+                  <Text style={styles.statValue}>£{statistics.totalSpent.toFixed(0)}</Text>
+                  <Text style={styles.statLabel}>Total Spent</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <MaterialIcons name="calendar-today" size={24} color={colors.primary[500]} />
+                  <Text style={styles.statValue}>
+                    {profile?.memberSince ? new Date(profile.memberSince).getFullYear() : 'New'}
+                  </Text>
+                  <Text style={styles.statLabel}>Member Since</Text>
+                </View>
+              </View>
+              
+              {/* Additional Stats Row */}
+              <View style={[styles.statsRow, { marginTop: spacing[4] }]}>
+                <View style={styles.statItem}>
+                  <MaterialIcons name="route" size={24} color={colors.warning[500]} />
+                  <Text style={styles.statValue}>{statistics.totalDistance.toFixed(0)} km</Text>
+                  <Text style={styles.statLabel}>Distance</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <MaterialIcons name="favorite" size={24} color={colors.error[500]} />
+                  <Text style={styles.statValue}>{statistics.favoritesCount}</Text>
+                  <Text style={styles.statLabel}>Favorites</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <MaterialIcons name="trending-up" size={24} color={colors.success[500]} />
+                  <Text style={styles.statValue}>£{statistics.avgFare.toFixed(0)}</Text>
+                  <Text style={styles.statLabel}>Avg Fare</Text>
+                </View>
+              </View>
+            </>
+          ) : (
+            <View style={styles.noStatsContainer}>
+              <Text style={styles.noStatsText}>Ride statistics will appear here after your first completed trip.</Text>
+              <View style={styles.statsRow}>
+                <View style={styles.statItem}>
+                  <MaterialIcons name="directions-car" size={24} color={colors.primary[500]} />
+                  <Text style={styles.statValue}>0</Text>
+                  <Text style={styles.statLabel}>Total Rides</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <MaterialIcons name="calendar-today" size={24} color={colors.success[500]} />
+                  <Text style={styles.statValue}>
+                    {profile?.memberSince ? new Date(profile.memberSince).getFullYear() : 'New'}
+                  </Text>
+                  <Text style={styles.statLabel}>Member Since</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <MaterialIcons name="verified" size={24} color={colors.primary[500]} />
+                  <Text style={styles.statValue}>✓</Text>
+                  <Text style={styles.statLabel}>Active</Text>
+                </View>
+              </View>
             </View>
-            <View style={styles.statItem}>
-              <MaterialIcons name="star" size={24} color={colors.warning[500]} />
-              <Text style={styles.statValue}>4.8</Text>
-              <Text style={styles.statLabel}>Rating</Text>
-            </View>
-            <View style={styles.statItem}>
-              <MaterialIcons name="account-circle" size={24} color={colors.success[500]} />
-              <Text style={styles.statValue}>2y</Text>
-              <Text style={styles.statLabel}>Member Since</Text>
-            </View>
-          </View>
+          )}
         </ModernCard>
 
         {/* Account Actions */}
         <ModernCard style={styles.actionsCard}>
           <Text style={styles.sectionTitle}>Account</Text>
           
-          <TouchableOpacity style={styles.actionRow}>
+          <TouchableOpacity 
+            style={styles.actionRow}
+            onPress={() => Alert.alert('Help & Support', 'Contact us at support@belfastridesapp.com')}
+          >
             <View style={styles.actionContent}>
-              <MaterialIcons name="edit" size={24} color={colors.primary[500]} />
+              <MaterialIcons name="help" size={24} color={colors.primary[500]} />
               <View style={styles.actionText}>
-                <Text style={styles.actionTitle}>Edit Profile</Text>
-                <Text style={styles.actionSubtitle}>Update your personal information</Text>
+                <Text style={styles.actionTitle}>Help & Support</Text>
+                <Text style={styles.actionSubtitle}>Get help with your account</Text>
               </View>
             </View>
             <MaterialIcons name="chevron-right" size={24} color={colors.text.tertiary} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionRow}>
+          <TouchableOpacity 
+            style={styles.actionRow}
+            onPress={() => Alert.alert('Privacy Policy', 'View privacy policy at belfastridesapp.com/privacy')}
+          >
             <View style={styles.actionContent}>
-              <MaterialIcons name="security" size={24} color={colors.primary[500]} />
+              <MaterialIcons name="privacy-tip" size={24} color={colors.primary[500]} />
               <View style={styles.actionText}>
-                <Text style={styles.actionTitle}>Account Security</Text>
-                <Text style={styles.actionSubtitle}>Password and security settings</Text>
-              </View>
-            </View>
-            <MaterialIcons name="chevron-right" size={24} color={colors.text.tertiary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionRow}>
-            <View style={styles.actionContent}>
-              <MaterialIcons name="delete" size={24} color={colors.error[500]} />
-              <View style={styles.actionText}>
-                <Text style={styles.actionTitle}>Delete Account</Text>
-                <Text style={styles.actionSubtitle}>Permanently delete your account</Text>
+                <Text style={styles.actionTitle}>Privacy Policy</Text>
+                <Text style={styles.actionSubtitle}>How we protect your data</Text>
               </View>
             </View>
             <MaterialIcons name="chevron-right" size={24} color={colors.text.tertiary} />
@@ -399,6 +497,19 @@ const styles = {
   photoButton: {
     marginTop: spacing[2],
   },
+  profileName: {
+    ...typography.styles.h3,
+    color: colors.text.primary,
+    textAlign: 'center' as const,
+    marginTop: spacing[2],
+  },
+  profileRole: {
+    ...typography.styles.bodySmall,
+    color: colors.text.secondary,
+    textAlign: 'center' as const,
+    marginTop: spacing[1],
+    marginBottom: spacing[2],
+  },
   infoCard: {
     marginBottom: spacing[4],
   },
@@ -415,6 +526,12 @@ const styles = {
     color: colors.text.secondary,
     fontWeight: 600 as const,
     marginBottom: spacing[2],
+  },
+  fieldNote: {
+    ...typography.styles.bodySmall,
+    color: colors.text.tertiary,
+    marginTop: spacing[1],
+    fontStyle: 'italic' as const,
   },
   inputContainer: {
     flexDirection: 'row' as const,
@@ -501,6 +618,16 @@ const styles = {
     color: colors.text.secondary,
     marginTop: spacing[1],
     textAlign: 'center' as const,
+  },
+  noStatsContainer: {
+    padding: spacing[4],
+  },
+  noStatsText: {
+    ...typography.styles.bodySmall,
+    color: colors.text.secondary,
+    textAlign: 'center' as const,
+    marginBottom: spacing[4],
+    fontStyle: 'italic' as const,
   },
 };
 
