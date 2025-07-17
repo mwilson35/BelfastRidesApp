@@ -569,17 +569,6 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
             <Pressable
               onPress={() => {
                 setMenuVisible(false);
-                navigation.navigate('Notifications' as never);
-              }}
-              style={styles.menuItem}
-            >
-              <MaterialIcons name="notifications" size={22} color="#333" />
-              <Text style={styles.menuText}>Notifications</Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => {
-                setMenuVisible(false);
                 navigation.navigate('Emergency' as never);
               }}
               style={styles.menuItem}
@@ -596,7 +585,7 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
               style={styles.menuItem}
             >
               <MaterialIcons name="settings" size={22} color="#333" />
-              <Text style={styles.menuText}>Settings</Text>
+              <Text style={styles.menuText}>Settings & Notifications</Text>
             </Pressable>
 
             <Pressable

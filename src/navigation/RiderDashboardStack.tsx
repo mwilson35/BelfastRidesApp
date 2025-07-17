@@ -6,7 +6,6 @@ import RideHistoryScreen from '../components/RideHistoryScreen';
 import MyScheduledRidesScreen from '../components/MyScheduledRidesScreen';
 import ScheduledRideDetailsScreen from '../components/ScheduledRideDetailsScreen';
 import PaymentMethodsScreen from '../components/PaymentMethodsScreen';
-import NotificationsScreen from '../components/NotificationsScreen';
 import EmergencyFeaturesScreen from '../components/EmergencyFeaturesScreen';
 import SettingsScreen from '../components/SettingsScreen';
 import FavoriteLocationsScreen from '../components/FavoriteLocationsScreen';
@@ -18,7 +17,6 @@ export type RiderDashboardStackParamList = {
   MyScheduledRides: undefined;
   ScheduledRideDetails: { ride: Ride };
   PaymentMethods: undefined;
-  Notifications: undefined;
   Emergency: undefined;
   Settings: undefined;
   FavoriteLocations: undefined;
@@ -65,10 +63,6 @@ const RiderDashboardStack = ({ token, logout }: { token: string; logout: () => v
 
       <Stack.Screen name="PaymentMethods">
         {(props) => <PaymentMethodsScreen {...props} token={token} />}
-      </Stack.Screen>
-
-      <Stack.Screen name="Notifications">
-        {(props) => <NotificationsScreen {...props} token={token} />}
       </Stack.Screen>
 
       <Stack.Screen name="Emergency">
