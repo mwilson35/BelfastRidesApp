@@ -613,6 +613,17 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
             <Pressable
               onPress={() => {
                 setMenuVisible(false);
+                navigation.navigate('TipScreen' as never);
+              }}
+              style={styles.menuItem}
+            >
+              <MaterialIcons name="monetization-on" size={22} color="#333" />
+              <Text style={styles.menuText}>Tips & Gratuity</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                setMenuVisible(false);
                 (navigation as any).navigate('Emergency', {
                   isRideActive: rideStatus && ['accepted', 'in_progress'].includes(rideStatus),
                   rideId: requestedRide?.rideId,
