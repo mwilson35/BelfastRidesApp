@@ -284,49 +284,38 @@ const ProfileScreen = ({ token }: { token: string }) => {
           </View>
         </ModernCard>
 
-        {/* Quick Actions */}
+        {/* Account Actions */}
         <ModernCard style={styles.actionsCard}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <Text style={styles.sectionTitle}>Account</Text>
           
-          <TouchableOpacity style={styles.actionRow} onPress={() => navigation.navigate('PaymentMethods' as never)}>
+          <TouchableOpacity style={styles.actionRow}>
             <View style={styles.actionContent}>
-              <MaterialIcons name="payment" size={24} color={colors.primary[500]} />
+              <MaterialIcons name="edit" size={24} color={colors.primary[500]} />
               <View style={styles.actionText}>
-                <Text style={styles.actionTitle}>Payment Methods</Text>
-                <Text style={styles.actionSubtitle}>Manage cards and payment options</Text>
+                <Text style={styles.actionTitle}>Edit Profile</Text>
+                <Text style={styles.actionSubtitle}>Update your personal information</Text>
               </View>
             </View>
             <MaterialIcons name="chevron-right" size={24} color={colors.text.tertiary} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionRow} onPress={() => navigation.navigate('Notifications' as never)}>
+          <TouchableOpacity style={styles.actionRow}>
             <View style={styles.actionContent}>
-              <MaterialIcons name="notifications" size={24} color={colors.primary[500]} />
+              <MaterialIcons name="security" size={24} color={colors.primary[500]} />
               <View style={styles.actionText}>
-                <Text style={styles.actionTitle}>Notifications</Text>
-                <Text style={styles.actionSubtitle}>Manage notification preferences</Text>
+                <Text style={styles.actionTitle}>Account Security</Text>
+                <Text style={styles.actionSubtitle}>Password and security settings</Text>
               </View>
             </View>
             <MaterialIcons name="chevron-right" size={24} color={colors.text.tertiary} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionRow} onPress={() => navigation.navigate('Emergency' as never)}>
+          <TouchableOpacity style={styles.actionRow}>
             <View style={styles.actionContent}>
-              <MaterialIcons name="emergency" size={24} color={colors.error[500]} />
+              <MaterialIcons name="delete" size={24} color={colors.error[500]} />
               <View style={styles.actionText}>
-                <Text style={styles.actionTitle}>Emergency Features</Text>
-                <Text style={styles.actionSubtitle}>Safety contacts and panic mode</Text>
-              </View>
-            </View>
-            <MaterialIcons name="chevron-right" size={24} color={colors.text.tertiary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionRow} onPress={() => navigation.navigate('Settings' as never)}>
-            <View style={styles.actionContent}>
-              <MaterialIcons name="settings" size={24} color={colors.primary[500]} />
-              <View style={styles.actionText}>
-                <Text style={styles.actionTitle}>Settings</Text>
-                <Text style={styles.actionSubtitle}>App preferences and favorites</Text>
+                <Text style={styles.actionTitle}>Delete Account</Text>
+                <Text style={styles.actionSubtitle}>Permanently delete your account</Text>
               </View>
             </View>
             <MaterialIcons name="chevron-right" size={24} color={colors.text.tertiary} />

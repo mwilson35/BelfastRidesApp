@@ -463,6 +463,17 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
             <Pressable
               onPress={() => {
                 setMenuVisible(false);
+                navigation.navigate('FavoriteLocations' as never);
+              }}
+              style={styles.menuItem}
+            >
+              <MaterialIcons name="place" size={22} color="#333" />
+              <Text style={styles.menuText}>Favorite Locations</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                setMenuVisible(false);
                 navigation.navigate('RideHistory' as never);
               }}
               style={styles.menuItem}
@@ -480,6 +491,50 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
             >
               <MaterialIcons name="event-note" size={22} color="#333" />
               <Text style={styles.menuText}>My Scheduled Rides</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                setMenuVisible(false);
+                navigation.navigate('PaymentMethods' as never);
+              }}
+              style={styles.menuItem}
+            >
+              <MaterialIcons name="payment" size={22} color="#333" />
+              <Text style={styles.menuText}>Payment Methods</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                setMenuVisible(false);
+                navigation.navigate('Notifications' as never);
+              }}
+              style={styles.menuItem}
+            >
+              <MaterialIcons name="notifications" size={22} color="#333" />
+              <Text style={styles.menuText}>Notifications</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                setMenuVisible(false);
+                navigation.navigate('Emergency' as never);
+              }}
+              style={styles.menuItem}
+            >
+              <MaterialIcons name="emergency" size={22} color="#333" />
+              <Text style={styles.menuText}>Emergency</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                setMenuVisible(false);
+                navigation.navigate('Settings' as never);
+              }}
+              style={styles.menuItem}
+            >
+              <MaterialIcons name="settings" size={22} color="#333" />
+              <Text style={styles.menuText}>Settings</Text>
             </Pressable>
 
             <Pressable

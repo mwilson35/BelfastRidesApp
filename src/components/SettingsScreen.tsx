@@ -5,8 +5,6 @@ import {
   ScrollView,
   Switch,
   TouchableOpacity,
-  TextInput,
-  Modal,
   Alert,
   ActivityIndicator,
 } from 'react-native';
@@ -15,13 +13,12 @@ import axios from 'axios';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 // Modern UI Components
-import ModernButton from './ui/ModernButton';
 import ModernCard from './ui/ModernCard';
 import ModernHeader from './ui/ModernHeader';
 
 // Theme
 import { colors, typography } from '../theme';
-import { spacing, borderRadius } from '../theme/layout';
+import { spacing } from '../theme/layout';
 
 type FavoriteLocation = {
   id: string;
@@ -33,7 +30,6 @@ type FavoriteLocation = {
 };
 
 type AppSettings = {
-  defaultPaymentMethod: string;
   autoAcceptBestFare: boolean;
   shareLocationWithContacts: boolean;
   enablePushNotifications: boolean;
@@ -43,9 +39,6 @@ type AppSettings = {
   autoBookFromFavorites: boolean;
   showDriverPhoto: boolean;
   enableRideReminders: boolean;
-  preferredLanguage: string;
-  distanceUnit: 'km' | 'miles';
-  currency: 'GBP' | 'EUR' | 'USD';
 };
 
 type Props = {
@@ -54,9 +47,7 @@ type Props = {
 
 const SettingsScreen: React.FC<Props> = ({ token }) => {
   const navigation = useNavigation();
-  const [favoriteLocations, setFavoriteLocations] = useState<FavoriteLocation[]>([]);
   const [settings, setSettings] = useState<AppSettings>({
-    defaultPaymentMethod: '',
     autoAcceptBestFare: false,
     shareLocationWithContacts: true,
     enablePushNotifications: true,
@@ -66,39 +57,24 @@ const SettingsScreen: React.FC<Props> = ({ token }) => {
     autoBookFromFavorites: false,
     showDriverPhoto: true,
     enableRideReminders: true,
-    preferredLanguage: 'en',
-    distanceUnit: 'km',
-    currency: 'GBP',
   });
   const [loading, setLoading] = useState(true);
-  const [showAddLocationModal, setShowAddLocationModal] = useState(false);
-  const [newLocation, setNewLocation] = useState({
-    name: '',
-    address: '',
-    type: 'other' as 'home' | 'work' | 'other',
-  });
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetchData();
+    fetchSettings();
   }, []);
 
-  const fetchData = async () => {
+  const fetchSettings = async () => {
     try {
-      const [locationsRes, settingsRes] = await Promise.all([
-        axios.get('http://192.168.33.5:5000/api/user/favorites', {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        axios.get('http://192.168.33.5:5000/api/user/settings', {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
-
-      setFavoriteLocations(locationsRes.data.locations || []);
-      setSettings(prev => ({ ...prev, ...settingsRes.data.settings }));
-    } catch (err) {
-      console.error('Failed to fetch data:', err);
-      Alert.alert('Error', 'Failed to load settings');
+      const res = await axios.get('http://192.168.33.5:5000/api/user/settings', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setSettings(prev => ({ ...prev, ...res.data.settings }));
+    } catch (err: any) {
+      console.error('Failed to fetch settings:', err);
+      if (err.response?.status !== 404) {
+        Alert.alert('Error', 'Failed to load settings');
+      }
     } finally {
       setLoading(false);
     }
@@ -112,103 +88,12 @@ const SettingsScreen: React.FC<Props> = ({ token }) => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setSettings(prev => ({ ...prev, [key]: value }));
-    } catch (err) {
-      Alert.alert('Error', 'Failed to update setting');
-    }
-  };
-
-  const addFavoriteLocation = async () => {
-    if (!newLocation.name || !newLocation.address) {
-      Alert.alert('Error', 'Please fill in name and address');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      // Geocode the address
-      const geocodeRes = await axios.post(
-        'http://192.168.33.5:5000/api/geocode',
-        { address: newLocation.address },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      const { latitude, longitude } = geocodeRes.data;
-
-      const res = await axios.post(
-        'http://192.168.33.5:5000/api/user/favorites',
-        {
-          ...newLocation,
-          latitude,
-          longitude,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      setFavoriteLocations(prev => [...prev, res.data.location]);
-      setShowAddLocationModal(false);
-      setNewLocation({ name: '', address: '', type: 'other' });
-      Alert.alert('Success', 'Favorite location added');
     } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.message || 'Failed to add location');
-    } finally {
-      setSaving(false);
+      if (err.response?.status !== 404) {
+        Alert.alert('Error', 'Failed to update setting');
+      }
     }
   };
-
-  const removeFavoriteLocation = async (locationId: string) => {
-    Alert.alert(
-      'Remove Location',
-      'Are you sure you want to remove this favorite location?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await axios.delete(`http://192.168.33.5:5000/api/user/favorites/${locationId}`, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              setFavoriteLocations(prev => prev.filter(loc => loc.id !== locationId));
-              Alert.alert('Success', 'Location removed');
-            } catch (err) {
-              Alert.alert('Error', 'Failed to remove location');
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const getLocationIcon = (type: string) => {
-    switch (type) {
-      case 'home': return 'home';
-      case 'work': return 'business';
-      default: return 'place';
-    }
-  };
-
-  const renderFavoriteLocation = (location: FavoriteLocation) => (
-    <View key={location.id} style={styles.locationItem}>
-      <View style={styles.locationInfo}>
-        <MaterialIcons 
-          name={getLocationIcon(location.type)} 
-          size={20} 
-          color={colors.primary[500]} 
-        />
-        <View style={styles.locationDetails}>
-          <Text style={styles.locationName}>{location.name}</Text>
-          <Text style={styles.locationAddress}>{location.address}</Text>
-        </View>
-      </View>
-      <TouchableOpacity
-        onPress={() => removeFavoriteLocation(location.id)}
-        style={styles.removeButton}
-      >
-        <MaterialIcons name="close" size={18} color={colors.error[500]} />
-      </TouchableOpacity>
-    </View>
-  );
 
   const renderSettingRow = (
     icon: string,
@@ -250,34 +135,11 @@ const SettingsScreen: React.FC<Props> = ({ token }) => {
     <View style={styles.container}>
       <ModernHeader 
         title="Settings" 
-        subtitle="Customize your ride experience"
+        subtitle="Customize your ride preferences"
         onMenuPress={() => navigation.goBack()} 
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Favorite Locations */}
-        <ModernCard style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.sectionTitle}>Favorite Locations</Text>
-            <ModernButton
-              title="Add Location"
-              variant="outline"
-              size="sm"
-              onPress={() => setShowAddLocationModal(true)}
-            />
-          </View>
-
-          {favoriteLocations.length > 0 ? (
-            favoriteLocations.map(renderFavoriteLocation)
-          ) : (
-            <View style={styles.emptyContainer}>
-              <MaterialIcons name="place" size={48} color={colors.text.tertiary} />
-              <Text style={styles.emptyText}>No favorite locations yet</Text>
-              <Text style={styles.emptySubtext}>Add your home, work, or frequently visited places</Text>
-            </View>
-          )}
-        </ModernCard>
-
         {/* Ride Preferences */}
         <ModernCard style={styles.card}>
           <Text style={styles.sectionTitle}>Ride Preferences</Text>
@@ -365,46 +227,6 @@ const SettingsScreen: React.FC<Props> = ({ token }) => {
           )}
         </ModernCard>
 
-        {/* App Preferences */}
-        <ModernCard style={styles.card}>
-          <Text style={styles.sectionTitle}>App Preferences</Text>
-          
-          <View style={styles.settingRow}>
-            <View style={styles.settingInfo}>
-              <MaterialIcons name="language" size={20} color={colors.primary[500]} />
-              <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>Language</Text>
-                <Text style={styles.settingSubtitle}>App display language</Text>
-              </View>
-            </View>
-            <Text style={styles.settingValue}>English</Text>
-          </View>
-
-          <View style={styles.settingRow}>
-            <View style={styles.settingInfo}>
-              <MaterialIcons name="straighten" size={20} color={colors.primary[500]} />
-              <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>Distance Unit</Text>
-                <Text style={styles.settingSubtitle}>Kilometers or miles</Text>
-              </View>
-            </View>
-            <Text style={styles.settingValue}>
-              {settings.distanceUnit === 'km' ? 'Kilometers' : 'Miles'}
-            </Text>
-          </View>
-
-          <View style={styles.settingRow}>
-            <View style={styles.settingInfo}>
-              <MaterialIcons name="attach-money" size={20} color={colors.primary[500]} />
-              <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>Currency</Text>
-                <Text style={styles.settingSubtitle}>Preferred currency display</Text>
-              </View>
-            </View>
-            <Text style={styles.settingValue}>{settings.currency}</Text>
-          </View>
-        </ModernCard>
-
         {/* Account Actions */}
         <ModernCard style={styles.card}>
           <Text style={styles.sectionTitle}>Account</Text>
@@ -434,85 +256,6 @@ const SettingsScreen: React.FC<Props> = ({ token }) => {
           </TouchableOpacity>
         </ModernCard>
       </ScrollView>
-
-      {/* Add Location Modal */}
-      <Modal visible={showAddLocationModal} animationType="slide" presentationStyle="pageSheet">
-        <View style={styles.modalContainer}>
-          <ModernHeader 
-            title="Add Favorite Location" 
-            subtitle="Save a location for quick booking"
-            onMenuPress={() => setShowAddLocationModal(false)} 
-          />
-
-          <View style={styles.modalContent}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Location Name</Text>
-              <TextInput
-                style={styles.input}
-                value={newLocation.name}
-                onChangeText={(text) => setNewLocation(prev => ({ ...prev, name: text }))}
-                placeholder="e.g., Home, Office, Gym"
-                autoCapitalize="words"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Address</Text>
-              <TextInput
-                style={styles.input}
-                value={newLocation.address}
-                onChangeText={(text) => setNewLocation(prev => ({ ...prev, address: text }))}
-                placeholder="Enter full address"
-                autoCapitalize="words"
-                multiline
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Type</Text>
-              <View style={styles.typeSelector}>
-                {(['home', 'work', 'other'] as const).map((type) => (
-                  <TouchableOpacity
-                    key={type}
-                    style={[
-                      styles.typeOption,
-                      newLocation.type === type && styles.selectedType
-                    ]}
-                    onPress={() => setNewLocation(prev => ({ ...prev, type }))}
-                  >
-                    <MaterialIcons 
-                      name={getLocationIcon(type)} 
-                      size={20} 
-                      color={newLocation.type === type ? colors.white : colors.primary[500]} 
-                    />
-                    <Text style={[
-                      styles.typeText,
-                      newLocation.type === type && styles.selectedTypeText
-                    ]}>
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.modalButtons}>
-              <ModernButton
-                title="Cancel"
-                variant="outline"
-                onPress={() => setShowAddLocationModal(false)}
-                style={styles.cancelButton}
-              />
-              <ModernButton
-                title="Add Location"
-                onPress={addFavoriteLocation}
-                loading={saving}
-                style={styles.saveButton}
-              />
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 };
@@ -541,62 +284,10 @@ const styles = {
     marginBottom: spacing[4],
     padding: spacing[4],
   },
-  cardHeader: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
-    alignItems: 'center' as const,
-    marginBottom: spacing[4],
-  },
   sectionTitle: {
     ...typography.styles.h3,
     color: colors.text.primary,
     marginBottom: spacing[4],
-  },
-  locationItem: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
-    alignItems: 'center' as const,
-    paddingVertical: spacing[3],
-    borderBottomWidth: 1,
-    borderBottomColor: colors.gray[200],
-  },
-  locationInfo: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    flex: 1,
-  },
-  locationDetails: {
-    marginLeft: spacing[3],
-    flex: 1,
-  },
-  locationName: {
-    ...typography.styles.body,
-    color: colors.text.primary,
-    fontWeight: '600' as const,
-  },
-  locationAddress: {
-    ...typography.styles.bodySmall,
-    color: colors.text.secondary,
-    marginTop: spacing[1],
-  },
-  removeButton: {
-    padding: spacing[2],
-  },
-  emptyContainer: {
-    alignItems: 'center' as const,
-    padding: spacing[6],
-  },
-  emptyText: {
-    ...typography.styles.body,
-    color: colors.text.secondary,
-    marginTop: spacing[2],
-    textAlign: 'center' as const,
-  },
-  emptySubtext: {
-    ...typography.styles.bodySmall,
-    color: colors.text.tertiary,
-    marginTop: spacing[1],
-    textAlign: 'center' as const,
   },
   settingRow: {
     flexDirection: 'row' as const,
@@ -625,10 +316,6 @@ const styles = {
     color: colors.text.secondary,
     marginTop: spacing[1],
   },
-  settingValue: {
-    ...typography.styles.body,
-    color: colors.text.secondary,
-  },
   actionRow: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
@@ -640,73 +327,6 @@ const styles = {
     ...typography.styles.body,
     color: colors.text.primary,
     marginLeft: spacing[3],
-    flex: 1,
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  modalContent: {
-    flex: 1,
-    padding: spacing[4],
-  },
-  inputGroup: {
-    marginBottom: spacing[4],
-  },
-  inputLabel: {
-    ...typography.styles.bodySmall,
-    color: colors.text.secondary,
-    fontWeight: '600' as const,
-    marginBottom: spacing[2],
-  },
-  input: {
-    ...typography.styles.body,
-    color: colors.text.primary,
-    backgroundColor: colors.gray[50],
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-  },
-  typeSelector: {
-    flexDirection: 'row' as const,
-    gap: spacing[2],
-  },
-  typeOption: {
-    flex: 1,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[2],
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: colors.primary[300],
-    backgroundColor: colors.white,
-  },
-  selectedType: {
-    backgroundColor: colors.primary[500],
-    borderColor: colors.primary[500],
-  },
-  typeText: {
-    ...typography.styles.bodySmall,
-    color: colors.primary[500],
-    marginLeft: spacing[2],
-    fontWeight: '500' as const,
-  },
-  selectedTypeText: {
-    color: colors.white,
-  },
-  modalButtons: {
-    flexDirection: 'row' as const,
-    gap: spacing[3],
-    marginTop: spacing[6],
-  },
-  cancelButton: {
-    flex: 1,
-  },
-  saveButton: {
     flex: 1,
   },
 };
