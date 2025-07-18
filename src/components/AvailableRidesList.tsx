@@ -207,6 +207,18 @@ const AvailableRidesList: React.FC<Props> = ({
     }
   }, [visible, token]);
 
+  // Auto-refresh available rides every 30 seconds when modal is open
+  useEffect(() => {
+    if (!visible) return;
+    
+    const interval = setInterval(() => {
+      console.log('🔄 Auto-refreshing available rides...');
+      fetchAvailableRides();
+    }, 30000); // 30 seconds
+    
+    return () => clearInterval(interval);
+  }, [visible, token]);
+
   // Helper function to check if ride is a rider ride or driver ride
   const isRiderRide = (ride: AvailableRide): ride is RiderRide => {
     return 'status' in ride && 'pickup_lat' in ride;

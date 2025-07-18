@@ -45,7 +45,7 @@ type Props = {
     pickup: RideWaypoint;
     destination: RideWaypoint;
     encodedPolyline?: string;
-    status: 'assigned' | 'en_route_pickup' | 'arrived_pickup' | 'in_progress' | 'completed';
+    status: 'accepted' | 'in_progress' | 'completed';
   } | null;
   onLocationUpdate?: (location: DriverLocation) => void;
   onNavigationAction?: (action: 'start_navigation' | 'arrived_pickup' | 'start_trip' | 'complete_trip') => void;
@@ -272,10 +272,8 @@ const DriverMapScreen: React.FC<Props> = ({
     if (!activeRide) return null;
     
     switch (activeRide.status) {
-      case 'assigned':
-      case 'en_route_pickup':
+      case 'accepted':
         return activeRide.pickup;
-      case 'arrived_pickup':
       case 'in_progress':
         return activeRide.destination;
       default:
@@ -287,11 +285,7 @@ const DriverMapScreen: React.FC<Props> = ({
     if (!activeRide) return null;
     
     switch (activeRide.status) {
-      case 'assigned':
-        return 'Start Navigation to Pickup';
-      case 'en_route_pickup':
-        return 'Arrived at Pickup';
-      case 'arrived_pickup':
+      case 'accepted':
         return 'Start Trip';
       case 'in_progress':
         return 'Complete Trip';
@@ -304,13 +298,7 @@ const DriverMapScreen: React.FC<Props> = ({
     if (!activeRide) return;
     
     switch (activeRide.status) {
-      case 'assigned':
-        onNavigationAction?.('start_navigation');
-        break;
-      case 'en_route_pickup':
-        onNavigationAction?.('arrived_pickup');
-        break;
-      case 'arrived_pickup':
+      case 'accepted':
         onNavigationAction?.('start_trip');
         break;
       case 'in_progress':
