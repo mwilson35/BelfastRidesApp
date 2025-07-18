@@ -245,46 +245,303 @@ exports.updateRideStatus = (req, res) => {
   );
 };
 
-// Helper function to broadcast driver location to relevant riders
-function broadcastDriverLocation(driverId, location) {
-  // Get riders who are tracking this driver
-  db.query(
-    `SELECT r.rider_id 
-     FROM rides r 
-     JOIN driver_active_rides dar ON r.id = dar.ride_id 
-     WHERE dar.driver_id = ? AND dar.status IN ('en_route_pickup', 'arrived_pickup', 'in_progress')`,
-    [driverId],
-    (err, results) => {
-      if (err || results.length === 0) return;
+// ===== AVAILABLE RIDES SYSTEM =====
 
-      results.forEach(row => {
-        io.to(`rider_${row.rider_id}`).emit('driverLocationUpdate', {
-          driverId,
-          location,
-          timestamp: new Date()
+// Get available rides for driver (prioritized list)
+exports.getAvailableRides = (req, res) => {
+  const driverId = req.user.id;
+
+  // First get driver's current location
+  db.query(
+    'SELECT latitude, longitude FROM driver_status WHERE driver_id = ?',
+    [driverId],
+    (err, driverResults) => {
+      if (err || driverResults.length === 0) {
+        return res.status(500).json({ message: 'Driver location not found' });
+      }
+
+      const driverLat = parseFloat(driverResults[0].latitude) || 54.607868;
+      const driverLng = parseFloat(driverResults[0].longitude) || -5.926437;
+
+      // Get all pending rides with distance calculation and priority scoring
+      const query = `
+        SELECT 
+          r.*,
+          u.name as rider_name,
+          u.phone as rider_phone,
+          u.rating as rider_rating,
+          (6371 * acos(
+            cos(radians(?)) * cos(radians(r.pickup_latitude)) * 
+            cos(radians(r.pickup_longitude) - radians(?)) + 
+            sin(radians(?)) * sin(radians(r.pickup_latitude))
+          )) AS distance_km,
+          (
+            CASE 
+              WHEN r.ride_type = 'premium' THEN 100
+              WHEN r.ride_type = 'standard' THEN 50
+              ELSE 25
+            END +
+            CASE 
+              WHEN (6371 * acos(
+                cos(radians(?)) * cos(radians(r.pickup_latitude)) * 
+                cos(radians(r.pickup_longitude) - radians(?)) + 
+                sin(radians(?)) * sin(radians(r.pickup_latitude))
+              )) < 2 THEN 50
+              WHEN (6371 * acos(
+                cos(radians(?)) * cos(radians(r.pickup_latitude)) * 
+                cos(radians(r.pickup_longitude) - radians(?)) + 
+                sin(radians(?)) * sin(radians(r.pickup_latitude))
+              )) < 5 THEN 25
+              ELSE 0
+            END +
+            CASE 
+              WHEN r.fare_estimate > 20 THEN 30
+              WHEN r.fare_estimate > 10 THEN 15
+              ELSE 0
+            END +
+            CASE 
+              WHEN u.rating >= 4.5 THEN 20
+              WHEN u.rating >= 4.0 THEN 10
+              ELSE 0
+            END
+          ) AS priority_score
+        FROM rides r
+        JOIN users u ON r.rider_id = u.id
+        LEFT JOIN driver_active_rides dar ON r.id = dar.ride_id
+        WHERE r.status = 'pending' 
+          AND dar.ride_id IS NULL
+          AND r.pickup_latitude IS NOT NULL 
+          AND r.pickup_longitude IS NOT NULL
+          AND (6371 * acos(
+            cos(radians(?)) * cos(radians(r.pickup_latitude)) * 
+            cos(radians(r.pickup_longitude) - radians(?)) + 
+            sin(radians(?)) * sin(radians(r.pickup_latitude))
+          )) < 15
+        ORDER BY priority_score DESC, distance_km ASC
+        LIMIT 20
+      `;
+
+      const params = [
+        driverLat, driverLng, driverLat, // distance calculation
+        driverLat, driverLng, driverLat, // priority scoring - close rides
+        driverLat, driverLng, driverLat, // priority scoring - medium distance
+        driverLat, driverLng, driverLat  // final filter
+      ];
+
+      db.query(query, params, (err, results) => {
+        if (err) {
+          console.error('Error fetching available rides:', err);
+          return res.status(500).json({ message: 'Failed to fetch available rides' });
+        }
+
+        const availableRides = results.map(ride => {
+          const distanceKm = parseFloat(ride.distance_km) || 0;
+          const priorityScore = parseInt(ride.priority_score) || 0;
+          
+          // Determine priority level and color
+          let priorityLevel = 'low';
+          let priorityColor = '#95a5a6'; // Gray
+          
+          if (priorityScore >= 150) {
+            priorityLevel = 'high';
+            priorityColor = '#e74c3c'; // Red - High priority
+          } else if (priorityScore >= 100) {
+            priorityLevel = 'medium';
+            priorityColor = '#f39c12'; // Orange - Medium priority
+          } else if (priorityScore >= 75) {
+            priorityLevel = 'normal';
+            priorityColor = '#3498db'; // Blue - Normal priority
+          }
+
+          return {
+            id: ride.id,
+            pickup: {
+              latitude: parseFloat(ride.pickup_latitude),
+              longitude: parseFloat(ride.pickup_longitude),
+              address: ride.pickup_location,
+              title: 'Pickup Location'
+            },
+            destination: {
+              latitude: parseFloat(ride.destination_latitude),
+              longitude: parseFloat(ride.destination_longitude),
+              address: ride.destination,
+              title: 'Destination'
+            },
+            rider: {
+              name: ride.rider_name,
+              phone: ride.rider_phone,
+              rating: parseFloat(ride.rider_rating) || 0
+            },
+            fare: {
+              estimate: parseFloat(ride.fare_estimate) || 0,
+              currency: 'GBP'
+            },
+            distance: {
+              toPickup: distanceKm,
+              tripDistance: parseFloat(ride.trip_distance_km) || 0
+            },
+            rideType: ride.ride_type || 'standard',
+            priority: {
+              level: priorityLevel,
+              score: priorityScore,
+              color: priorityColor
+            },
+            requestedAt: ride.created_at,
+            estimatedDuration: ride.estimated_duration || null
+          };
+        });
+
+        res.json({
+          success: true,
+          rides: availableRides,
+          driverLocation: {
+            latitude: driverLat,
+            longitude: driverLng
+          }
         });
       });
     }
   );
-}
+};
 
-// Helper function to notify rider of ride status changes
-function notifyRiderOfStatusChange(rideId, status) {
+// Accept a ride (driver claims a specific ride)
+exports.acceptRide = (req, res) => {
+  const driverId = req.user.id;
+  const { rideId } = req.body;
+
+  if (!rideId) {
+    return res.status(400).json({ message: 'Ride ID required' });
+  }
+
+  // Check if driver already has an active ride
   db.query(
-    'SELECT rider_id FROM rides WHERE id = ?',
-    [rideId],
-    (err, results) => {
-      if (err || results.length === 0) return;
+    'SELECT id FROM driver_active_rides WHERE driver_id = ? AND status NOT IN ("completed", "cancelled")',
+    [driverId],
+    (err, activeRides) => {
+      if (err) {
+        return res.status(500).json({ message: 'Database error' });
+      }
 
-      const riderId = results[0].rider_id;
-      io.to(`rider_${riderId}`).emit('rideStatusUpdate', {
-        rideId,
-        status,
-        timestamp: new Date()
-      });
+      if (activeRides.length > 0) {
+        return res.status(400).json({ message: 'Driver already has an active ride' });
+      }
+
+      // Check if ride is still available
+      db.query(
+        'SELECT * FROM rides WHERE id = ? AND status = "pending"',
+        [rideId],
+        (err, rideResults) => {
+          if (err) {
+            return res.status(500).json({ message: 'Database error' });
+          }
+
+          if (rideResults.length === 0) {
+            return res.status(404).json({ message: 'Ride not available' });
+          }
+
+          const ride = rideResults[0];
+
+          // Start transaction to assign ride
+          db.beginTransaction((transErr) => {
+            if (transErr) {
+              return res.status(500).json({ message: 'Transaction error' });
+            }
+
+            // Insert into driver_active_rides
+            db.query(
+              'INSERT INTO driver_active_rides (driver_id, ride_id, status) VALUES (?, ?, "assigned")',
+              [driverId, rideId],
+              (assignErr) => {
+                if (assignErr) {
+                  return db.rollback(() => {
+                    res.status(500).json({ message: 'Failed to assign ride' });
+                  });
+                }
+
+                // Update ride status
+                db.query(
+                  'UPDATE rides SET driver_id = ?, status = "assigned", updated_at = NOW() WHERE id = ?',
+                  [driverId, rideId],
+                  (updateErr) => {
+                    if (updateErr) {
+                      return db.rollback(() => {
+                        res.status(500).json({ message: 'Failed to update ride' });
+                      });
+                    }
+
+                    // Update driver status to busy
+                    db.query(
+                      'UPDATE driver_status SET status = "busy", updated_at = NOW() WHERE driver_id = ?',
+                      [driverId],
+                      (statusErr) => {
+                        if (statusErr) {
+                          return db.rollback(() => {
+                            res.status(500).json({ message: 'Failed to update driver status' });
+                          });
+                        }
+
+                        // Commit transaction
+                        db.commit((commitErr) => {
+                          if (commitErr) {
+                            return db.rollback(() => {
+                              res.status(500).json({ message: 'Failed to commit transaction' });
+                            });
+                          }
+
+                          // Notify rider that driver has accepted
+                          io.to(`rider_${ride.rider_id}`).emit('rideAccepted', {
+                            rideId,
+                            driverId,
+                            message: 'Driver is on the way!'
+                          });
+
+                          // Send ride details back to driver
+                          const acceptedRide = {
+                            id: ride.id,
+                            pickup: {
+                              latitude: parseFloat(ride.pickup_latitude),
+                              longitude: parseFloat(ride.pickup_longitude),
+                              title: 'Pickup Location',
+                              description: ride.pickup_location,
+                              type: 'pickup'
+                            },
+                            destination: {
+                              latitude: parseFloat(ride.destination_latitude),
+                              longitude: parseFloat(ride.destination_longitude),
+                              title: 'Destination',
+                              description: ride.destination,
+                              type: 'destination'
+                            },
+                            status: 'assigned',
+                            encodedPolyline: ride.encoded_polyline,
+                            rider: {
+                              name: ride.rider_name || 'Rider',
+                              phone: ride.rider_phone || ''
+                            },
+                            fare: {
+                              estimate: parseFloat(ride.fare_estimate) || 0,
+                              currency: 'GBP'
+                            }
+                          };
+
+                          res.json({
+                            success: true,
+                            message: 'Ride accepted successfully',
+                            activeRide: acceptedRide
+                          });
+                        });
+                      }
+                    );
+                  }
+                );
+              }
+            );
+          });
+        }
+      );
     }
   );
-}
+};
 
 // ===== SOCKET.IO EVENTS FOR DRIVERS =====
 
@@ -457,6 +714,10 @@ app.put('/api/driver/location', authenticateDriver, driverController.updateDrive
 app.get('/api/driver/active-ride', authenticateDriver, driverController.getActiveRide);
 app.put('/api/driver/ride-status', authenticateDriver, driverController.updateRideStatus);
 
+// Available rides routes
+app.get('/api/drivers/available-rides', authenticateDriver, driverController.getAvailableRides);
+app.post('/api/drivers/accept-ride', authenticateDriver, driverController.acceptRide);
+
 // Middleware to authenticate drivers (adjust based on your auth system)
 function authenticateDriver(req, res, next) {
   // Your driver authentication logic here
@@ -472,5 +733,7 @@ module.exports = {
   getActiveRide: exports.getActiveRide,
   updateRideStatus: exports.updateRideStatus,
   assignRideToDriver: exports.assignRideToDriver,
+  getAvailableRides: exports.getAvailableRides,
+  acceptRide: exports.acceptRide,
   setupDriverSocketEvents
 };

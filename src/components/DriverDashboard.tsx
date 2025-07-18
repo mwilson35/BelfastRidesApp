@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import DriverMapScreen from './DriverMapScreen';
+import AvailableRidesList from './AvailableRidesList';
 import { io } from 'socket.io-client';
 import { buildApiUrl, getAuthHeaders, API_CONFIG } from '../config/api';
 import { testBackendConnection, testDriverEndpoints } from '../utils/testConnection';
@@ -31,6 +32,8 @@ const DriverDashboard: React.FC<Props> = ({ logout, token, driverId = 1 }) => {
   const [activeRide, setActiveRide] = useState<ActiveRide>(null);
   const [driverStatus, setDriverStatus] = useState<'offline' | 'online' | 'busy'>('online');
   const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [showAvailableRides, setShowAvailableRides] = useState(false);
+  const [previewRide, setPreviewRide] = useState<any>(null);
 
   // Test backend connection
   const handleTestConnection = async () => {
@@ -137,6 +140,21 @@ const DriverDashboard: React.FC<Props> = ({ logout, token, driverId = 1 }) => {
     }
   };
 
+  // Handle ride acceptance from available rides list
+  const handleRideAccepted = (acceptedRide: any) => {
+    setActiveRide(acceptedRide);
+    setDriverStatus('busy');
+    setPreviewRide(null);
+    Alert.alert('Ride Accepted', 'Navigate to pickup location');
+  };
+
+  // Handle route preview for selected ride
+  const handleRoutePreview = (ride: any) => {
+    setPreviewRide(ride);
+    // You could show the route on the map here
+    console.log('Previewing route for ride:', ride.id);
+  };
+
   return (
     <View style={styles.container}>
       {/* Test Connection Button - Remove in production */}
@@ -150,12 +168,37 @@ const DriverDashboard: React.FC<Props> = ({ logout, token, driverId = 1 }) => {
         </Text>
       </TouchableOpacity>
 
+      {/* Available Rides Button */}
+      {!activeRide && driverStatus === 'online' && (
+        <TouchableOpacity 
+          style={styles.availableRidesButton} 
+          onPress={() => setShowAvailableRides(true)}
+        >
+          <Text style={styles.availableRidesButtonText}>
+            🚗 Available Rides
+          </Text>
+        </TouchableOpacity>
+      )}
+
       <DriverMapScreen 
         activeRide={activeRide}
         onLocationUpdate={handleLocationUpdate}
         onNavigationAction={handleNavigationAction}
         driverId={driverId}
         driverToken={token || undefined}
+      />
+
+      {/* Available Rides List Modal */}
+      <AvailableRidesList
+        token={token}
+        visible={showAvailableRides}
+        onClose={() => {
+          setShowAvailableRides(false);
+          setPreviewRide(null);
+        }}
+        onRideAccepted={handleRideAccepted}
+        onRoutePreview={handleRoutePreview}
+        userRole="driver"
       />
     </View>
   );
@@ -176,6 +219,21 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   testButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  availableRidesButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    backgroundColor: '#28a745',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    zIndex: 1000,
+  },
+  availableRidesButtonText: {
     color: 'white',
     fontSize: 12,
     fontWeight: '600',

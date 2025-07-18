@@ -13,6 +13,8 @@ export const API_CONFIG = {
     DRIVER_LOCATION: '/api/drivers/location',
     DRIVER_ACTIVE_RIDE: '/api/drivers/active-ride',
     DRIVER_RIDE_STATUS: '/api/drivers/ride-status',
+    DRIVER_AVAILABLE_RIDES: '/api/drivers/available-rides',
+    DRIVER_ACCEPT_RIDE: '/api/drivers/accept-ride',
     
     // Rider endpoints (existing)
     RIDES: '/api/rides',
