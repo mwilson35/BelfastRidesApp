@@ -740,7 +740,7 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
           rateeId={rateeId}
           visible={showRatingModal}
           token={token}
-          onClose={() => setShowRatingModal(false)}
+          onClose={handlePostRatingCleanup} // Use the same cleanup for close and submit
           onSubmitted={handlePostRatingCleanup}
         />
       )}
