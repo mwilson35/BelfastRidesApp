@@ -433,7 +433,8 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
             )}
 
             
-            {favoriteLocations.length > 0 && (
+            {/* Hide quick select if preview or requestedRide is set */}
+            {!preview && !requestedRide && favoriteLocations.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Quick Select ({favoriteLocations.length} favorites)</Text>
                 {favoriteLocations.map((location: any) => (
@@ -539,7 +540,13 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Active Ride</Text>
                 <Text>Distance: {requestedRide.distance}</Text>
-                <Text>Duration: {requestedRide.duration}</Text>
+                <Text>Duration: {(() => {
+                  if (requestedRide.duration != null && !isNaN(requestedRide.duration)) {
+                    return `${Math.round(requestedRide.duration / 60)} min`;
+                  }
+                  if (rideStatus === 'requested') return 'Waiting for driver...';
+                  return 'N/A';
+                })()}</Text>
                 <Text>Fare: {requestedRide.estimatedFare}</Text>
                 {rideStatus !== 'in_progress' && (
                   <View style={{ marginTop: 12 }}>
@@ -574,6 +581,23 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
                     }}
                   />
                 </View>
+              </View>
+            )}
+
+            {/* Emergency Button moved to bottom of bottom sheet when ride is active */}
+            {requestedRide && rideStatus && ['accepted', 'in_progress'].includes(rideStatus) && (
+              <View style={{ padding: 16 }}>
+                <TouchableOpacity 
+                  style={styles.emergencyButton}
+                  onPress={() => (navigation as any).navigate('Emergency', {
+                    isRideActive: rideStatus && ['accepted', 'in_progress'].includes(rideStatus),
+                    rideId: requestedRide?.rideId,
+                    currentLocation: driverLocation || undefined
+                  })}
+                >
+                  <MaterialIcons name="emergency" size={20} color="#fff" />
+                  <Text style={styles.emergencyButtonText}>Emergency</Text>
+                </TouchableOpacity>
               </View>
             )}
 
