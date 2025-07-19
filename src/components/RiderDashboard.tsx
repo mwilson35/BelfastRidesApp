@@ -312,7 +312,18 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
     setRequestLoading(true);
     try {
       const data = await requestRide(pickupLocation, destination, token);
-      setRequestedRide(data);
+      // Normalize backend response to match expected frontend shape
+      setRequestedRide({
+        rideId: data.id || data.rideId,
+        pickupLocation: data.pickup_location || data.pickupLocation,
+        destination: data.destination,
+        distance: data.distance,
+        duration: data.duration, // seconds
+        estimatedFare: data.estimated_fare || data.estimatedFare || data.fare,
+        encodedPolyline: data.encoded_polyline || data.encodedPolyline,
+        status: data.status,
+        // Add any other fields your UI expects
+      });
     } catch (err: any) {
       Alert.alert('Request Failed', err.response?.data?.message || err.message);
     } finally {
@@ -540,13 +551,10 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Active Ride</Text>
                 <Text>Distance: {requestedRide.distance}</Text>
-                <Text>Duration: {(() => {
-                  if (requestedRide.duration != null && !isNaN(requestedRide.duration)) {
-                    return `${Math.round(requestedRide.duration / 60)} min`;
-                  }
-                  if (rideStatus === 'requested') return 'Waiting for driver...';
-                  return 'N/A';
-                })()}</Text>
+                <Text>Duration: {requestedRide.duration && !isNaN(requestedRide.duration) && requestedRide.duration > 0
+                  ? `${Math.round(requestedRide.duration / 60)} min`
+                  : 'Waiting for driver...'}
+                </Text>
                 <Text>Fare: {requestedRide.estimatedFare}</Text>
                 {rideStatus !== 'in_progress' && (
                   <View style={{ marginTop: 12 }}>
