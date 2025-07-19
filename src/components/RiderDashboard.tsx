@@ -175,6 +175,46 @@ const RiderDashboard: React.FC<Props> = ({ logout, token }) => {
     }, [token])
   );
 
+  // Rescue active ride for rider on mount or login
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchActiveRide = async () => {
+      try {
+        const res = await axios.get(
+          'http://192.168.33.5:5000/api/rides/riders/active-ride',
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const activeRide = res.data.activeRide;
+        if (activeRide && activeRide.id) {
+          // Map backend fields to frontend expected shape
+          setRequestedRide({
+            rideId: activeRide.id,
+            pickupLocation: activeRide.pickup_location,
+            destination: activeRide.destination,
+            distance: activeRide.distance,
+            duration: activeRide.duration, // May be undefined if not provided
+            estimatedFare: activeRide.estimated_fare || activeRide.fare,
+            encodedPolyline: activeRide.encoded_polyline,
+            status: activeRide.status,
+            // Add any other fields your UI expects
+          });
+          setRideStatus(activeRide.status); // Should be 'requested', 'accepted', etc.
+          // Optionally show alert
+          // Alert.alert('Ride Recovered', `Your ride to ${activeRide.destination} is in progress`);
+        } else {
+          setRequestedRide(null);
+          setRideStatus(null);
+        }
+      } catch (err) {
+        setRequestedRide(null);
+        setRideStatus(null);
+      }
+    };
+
+    fetchActiveRide();
+  }, [token]);
+
   const handlePostRatingCleanup = () => {
     setShowRatingModal(false);
     setRateeId(null);
